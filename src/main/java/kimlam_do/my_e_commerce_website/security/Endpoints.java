@@ -33,10 +33,12 @@ public class Endpoints {
             "/auth/login",
             "/auth/login/**",
             "/vn-pay/create-payment/**",
+
             // Authorization is handled directly in functions
             "/cart-items/add-item",
             "/favorite-products/add-favorite-product",
             "/reviews/add-review",
+            "/orders/add-order"
     };
 
     public static final String[] PUBLIC_PUT_ENDPOINTS = {

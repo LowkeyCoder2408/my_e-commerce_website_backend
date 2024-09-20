@@ -22,7 +22,6 @@ public class AddressController {
     @GetMapping
     public ResponseEntity<?> getAllAddresses() {
         try {
-            System.out.println("SECRET_KEYS: " + System.getenv("SECRET_KEYS"));
             List<AddressDTO> addressDTOs = addressService.getAllAddresses();
             return ResponseEntity.ok(addressDTOs);
         } catch (RuntimeException e) {

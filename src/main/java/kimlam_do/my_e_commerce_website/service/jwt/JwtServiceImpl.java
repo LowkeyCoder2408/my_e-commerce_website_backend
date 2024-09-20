@@ -32,7 +32,6 @@ public class JwtServiceImpl implements JwtService {
         Map<String, Object> claims = new HashMap<>();
 
         User user = userSecurityService.findByEmail(email);
-        System.out.println(user);
         if (user != null) {
             claims.put("id", user.getId());
             claims.put("photo", user.getPhoto());
@@ -93,7 +92,6 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public Boolean validateToken(String token, UserDetails userDetails) {
         final String email = extractEmail(token);
-        System.out.println(email);
         return (email.equals(userDetails.getUsername()) && !isTokenExpired(token));
     }
 
