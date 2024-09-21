@@ -6,4 +6,5 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 @RepositoryRestResource(exported = false)
 public interface DeliveryMethodRepository extends JpaRepository<DeliveryMethod, Integer> {
+    DeliveryMethod findByName(String name);
 }

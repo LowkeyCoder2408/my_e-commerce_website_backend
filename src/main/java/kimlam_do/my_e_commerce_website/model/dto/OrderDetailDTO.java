@@ -15,15 +15,16 @@ public class OrderDetailDTO {
     private int quantity;
     private double productPriceAtOrderTime;
     private double subtotal;
-    private Integer productId;
+    private ProductDTO product;
     private Integer orderId;
+
     public static OrderDetailDTO toDTO(OrderDetail orderDetail) {
         return OrderDetailDTO.builder()
                 .id(orderDetail.getId())
                 .quantity(orderDetail.getQuantity())
                 .productPriceAtOrderTime(orderDetail.getProductPriceAtOrderTime())
                 .subtotal(orderDetail.getSubtotal())
-                .productId(orderDetail.getProduct() != null ? orderDetail.getProduct().getId() : null)
+                .product(orderDetail.getProduct() != null ? ProductDTO.toDTO(orderDetail.getProduct()) : null)
                 .orderId(orderDetail.getOrder() != null ? orderDetail.getOrder().getId() : null)
                 .build();
     }

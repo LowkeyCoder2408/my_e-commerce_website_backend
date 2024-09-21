@@ -49,7 +49,7 @@ public class Order {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private OrderStatus status = OrderStatus.NEW;
+    private OrderStatus status;
 
     @Column(columnDefinition = "TEXT")
     private String note;
