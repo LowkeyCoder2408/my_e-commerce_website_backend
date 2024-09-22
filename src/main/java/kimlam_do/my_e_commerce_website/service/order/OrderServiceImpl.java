@@ -3,6 +3,7 @@ package kimlam_do.my_e_commerce_website.service.order;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.transaction.Transactional;
 import kimlam_do.my_e_commerce_website.model.dto.OrderDTO;
 import kimlam_do.my_e_commerce_website.model.entity.*;
 import kimlam_do.my_e_commerce_website.repository.*;
@@ -22,11 +23,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
-    private final OrderDetailRepository orderDetailRepository;
     private final UserRepository userRepository;
     private final CartItemRepository cartItemRepository;
     private final DeliveryMethodRepository deliveryMethodRepository;
     private final ProductRepository productRepository;
+    private final ProvinceRepository provinceRepository;
+    private final DistrictRepository districtRepository;
+    private final WardRepository wardRepository;
+    private final AddressRepository addressRepository;
 
     @Override
     public List<OrderDTO> getAllOrders() {
@@ -35,8 +39,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
     public ObjectNode addAnOrder(JsonNode jsonData) {
-        System.out.println(jsonData.toString());
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode response = mapper.createObjectNode();
 
@@ -76,7 +80,7 @@ public class OrderServiceImpl implements OrderService {
 
         String addressLine = jsonData.has("addressLine") && !jsonData.get("addressLine").isNull() ? formatStringByJson(jsonData.get("addressLine").asText()) : null;
         if (addressLine == null || addressLine.isEmpty()) {
-            response.put("message", "Đường dẫn địa chỉ thiếu hoặc không hợp lệ");
+            response.put("message", "Đường dẫn địa chỉ (cụ thể) thiếu hoặc không hợp lệ");
             response.put("status", "error");
             return response;
         }
@@ -87,10 +91,22 @@ public class OrderServiceImpl implements OrderService {
             response.put("status", "error");
             return response;
         }
+        Province province = provinceRepository.findByName(provinceName);
+        if (province == null) {
+            response.put("message", "Tỉnh '" + provinceName + "' không tồn tại.");
+            response.put("status", "error");
+            return response;
+        }
 
         String districtName = jsonData.has("districtName") && !jsonData.get("districtName").isNull() ? formatStringByJson(jsonData.get("districtName").asText()) : null;
         if (districtName == null || districtName.isEmpty()) {
             response.put("message", "Tên huyện/quận thiếu hoặc không hợp lệ");
+            response.put("status", "error");
+            return response;
+        }
+        District district = districtRepository.findByNameAndProvince(districtName, province);
+        if (district == null) {
+            response.put("message", "Huyện '" + districtName + "' không tồn tại trong tỉnh '" + provinceName + "'.");
             response.put("status", "error");
             return response;
         }
@@ -101,6 +117,16 @@ public class OrderServiceImpl implements OrderService {
             response.put("status", "error");
             return response;
         }
+        Ward ward = wardRepository.findByNameAndDistrict(wardName, district);
+        if (ward == null) {
+            response.put("message", "Xã '" + wardName + "' không tồn tại trong huyện '" + districtName + "'.");
+            response.put("status", "error");
+            return response;
+        }
+
+        boolean isSetDefaultAddress = jsonData.has("isSetDefaultAddress") ? jsonData.get("isSetDefaultAddress").asBoolean() : false;
+
+        boolean isUseDefaultAddress = jsonData.has("isUseDefaultAddress") ? jsonData.get("isUseDefaultAddress").asBoolean() : false;
 
         String deliveryMethod = jsonData.has("deliveryMethod") && !jsonData.get("deliveryMethod").isNull() ? formatStringByJson(jsonData.get("deliveryMethod").asText()) : null;
         if (deliveryMethod == null || deliveryMethod.isEmpty()) {
@@ -218,9 +244,9 @@ public class OrderServiceImpl implements OrderService {
                 }
 
                 double productPrice = product.getCurrentPrice() * buyNowProductQuantity;
-                // orderDetails
                 order.setTotalPriceProduct(productPrice);
                 order.updateTotalPrice();
+
                 // Tạo OrderDetail cho sản phẩm mua ngay
                 OrderDetail orderDetail = new OrderDetail();
                 orderDetail.setQuantity(buyNowProductQuantity);
@@ -242,7 +268,7 @@ public class OrderServiceImpl implements OrderService {
                 product.setSoldQuantity(product.getSoldQuantity() + buyNowProductQuantity);
                 productRepository.save(product);
             } else {
-                response.put("message", "Sản phẩm không tồn tại");
+                response.put("message", "Sản phẩm cần mua ngay không tồn tại");
                 response.put("status", "error");
                 return response;
             }
@@ -282,6 +308,7 @@ public class OrderServiceImpl implements OrderService {
                     orderDetail.setProductPriceAtOrderTime(product.getCurrentPrice());
 
                     orderDetails.add(orderDetail);
+
                     // Xóa CartItem sau khi đã thêm vào Order
                     cartItemRepository.delete(cartItem);
                 } else {
@@ -298,6 +325,50 @@ public class OrderServiceImpl implements OrderService {
             // Lưu OrderDetails
             order.setOrderDetails(orderDetails);
         }
+
+        if (!isUseDefaultAddress) {
+            Address existingAddress = addressRepository.findByAddressLineAndProvinceAndDistrictAndWardAndUser(
+                    addressLine, province, district, ward, userRepository.findById(userId).get()
+            );
+
+            if (existingAddress != null) {
+                // Đã tồn tại một địa chỉ giống nhau trong cơ sở dữ liệu
+                if (isSetDefaultAddress && !existingAddress.isDefaultAddress()) {
+                    // Chỉ cập nhật địa chỉ mặc định nếu địa chỉ hiện tại chưa phải là mặc định
+                    addressRepository.updateIsDefaultAddressByUserId(userId);
+                    existingAddress.setDefaultAddress(true);
+                }
+                // Cập nhật thông tin khác nếu cần
+                addressRepository.save(existingAddress);
+            } else {
+                Address newAddress = new Address();
+                newAddress.setAddressLine(addressLine);
+                newAddress.setProvince(province);
+                newAddress.setDistrict(district);
+                newAddress.setWard(ward);
+                newAddress.setUser(userRepository.findById(userId).get());
+
+                if (isSetDefaultAddress) {
+                    addressRepository.updateIsDefaultAddressByUserId(userId);
+                    newAddress.setDefaultAddress(true);
+                }
+                addressRepository.save(newAddress);
+            }
+        }
+
+        // Tạo OrderTrack
+        OrderTrack orderTrack = new OrderTrack();
+        orderTrack.setNote(order.getNote());
+        orderTrack.setStatus(order.getStatus());
+        orderTrack.setOrder(order);
+
+        // Thêm OrderTrack vào danh sách orderTracks
+        List<OrderTrack> orderTracks = order.getOrderTracks();
+        if (orderTracks == null) {
+            orderTracks = new ArrayList<>();
+            order.setOrderTracks(orderTracks);
+        }
+        orderTracks.add(orderTrack);
         orderRepository.save(order);
 
         response.put("message", "Khởi tạo đơn hàng thành công");

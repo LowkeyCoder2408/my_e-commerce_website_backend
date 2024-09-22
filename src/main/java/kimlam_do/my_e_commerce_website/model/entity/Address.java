@@ -11,7 +11,7 @@ import java.util.Objects;
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "address")
+@Table(name = "address", uniqueConstraints = {@UniqueConstraint(columnNames = {"user_id", "address_line", "province_id", "district_id", "ward_id"})})
 public class Address {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,5 +44,10 @@ public class Address {
         if (o == null || getClass() != o.getClass()) return false;
         Address address = (Address) o;
         return Objects.equals(addressLine, address.addressLine) && Objects.equals(province, address.province) && Objects.equals(district, address.district) && Objects.equals(ward, address.ward) && Objects.equals(user, address.user);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(addressLine, province, district, ward, user);
     }
 }

@@ -57,6 +57,9 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderDetail> orderDetails = new ArrayList<>();
 
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderTrack> orderTracks = new ArrayList<>();
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

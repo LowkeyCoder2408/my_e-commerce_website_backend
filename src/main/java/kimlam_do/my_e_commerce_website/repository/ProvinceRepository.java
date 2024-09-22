@@ -6,4 +6,5 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 @RepositoryRestResource(exported = false)
 public interface ProvinceRepository extends JpaRepository<Province, Integer> {
+    Province findByName(String name);
 }

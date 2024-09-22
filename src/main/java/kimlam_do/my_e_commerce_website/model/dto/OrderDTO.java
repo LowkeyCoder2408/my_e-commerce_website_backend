@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Builder
 @Data
@@ -30,6 +31,7 @@ public class OrderDTO {
     private String status;
     private String note;
     private List<OrderDetailDTO> orderDetails;
+    private List<OrderTrackDTO> orderTracks;
     private Integer userId;
     private String paymentMethodName;
     private String deliveryMethodName;
@@ -54,9 +56,10 @@ public class OrderDTO {
                         order.getOrderDetails().stream()
                                 .map(OrderDetailDTO::toDTO)
                                 .toList() : null)
+                .orderTracks(order.getOrderTracks() != null ? order.getOrderTracks().stream().map(OrderTrackDTO::toDTO).collect(Collectors.toList()) : null)
                 .userId(order.getUser() != null ? order.getUser().getId() : null)
-                .paymentMethodName(order.getPaymentMethod() != null ? order.getPaymentMethod().name() : null) // Convert Enum to String
-                .deliveryMethodName(order.getDeliveryMethod() != null ? order.getDeliveryMethod().getName() : null) // Assuming a `getName` method
+                .paymentMethodName(order.getPaymentMethod() != null ? order.getPaymentMethod().name() : null)
+                .deliveryMethodName(order.getDeliveryMethod() != null ? order.getDeliveryMethod().getName() : null)
                 .build();
     }
 }
