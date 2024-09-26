@@ -25,7 +25,7 @@ public enum OrderStatus {
     PICKED {
         @Override
         public String defaultDescription() {
-            return "Shipper nhận hàng";
+            return "Shipper đã nhận hàng";
         }
     },
 

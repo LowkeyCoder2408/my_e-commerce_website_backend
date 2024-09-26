@@ -33,6 +33,34 @@ public class OrderController {
         }
     }
 
+    @GetMapping("/find-by-id/{id}")
+    public ResponseEntity<?> findById(@PathVariable int id) {
+        try {
+            OrderDTO orderDTO = orderService.findById(id);
+            return ResponseEntity.ok(orderDTO);
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Người dùng không tồn tại hoặc yêu cầu không hợp lệ");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Đã xảy ra lỗi trong quá trình xử lý yêu cầu lấy đơn hàng theo id");
+        }
+    }
+
+    @GetMapping("/find-by-user")
+    public ResponseEntity<?> getAllOrdersByUser(@RequestParam(value = "userId") int userId) {
+        try {
+            List<OrderDTO> orderDTOs = orderService.getAllOrdersByUserId(userId);
+            return ResponseEntity.ok(orderDTOs);
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Người dùng không tồn tại hoặc yêu cầu không hợp lệ");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Đã xảy ra lỗi trong quá trình xử lý yêu cầu lấy danh sách tất cả các đơn hàng của người dùng");
+        }
+    }
+
     @PostMapping("/add-order")
     public ResponseEntity<?> addAnOrder(@RequestBody JsonNode jsonData) {
         try {
@@ -45,6 +73,23 @@ public class OrderController {
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode errorResponse = mapper.createObjectNode();
             errorResponse.put("message", "Đã xảy ra lỗi khi thêm đơn hàng");
+            errorResponse.put("status", "error");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PutMapping("/cancel-order/{orderId}")
+    public ResponseEntity<ObjectNode> cancelOrder(@PathVariable Integer orderId) {
+        try {
+            ObjectNode response = orderService.cancelOrder(orderId);
+            String status = response.get("status").asText();
+            HttpStatus httpStatus = "error".equals(status) ? HttpStatus.BAD_REQUEST : HttpStatus.OK;
+            return new ResponseEntity<>(response, httpStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("message", "Đã xảy ra lỗi khi hủy đơn hàng");
             errorResponse.put("status", "error");
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }

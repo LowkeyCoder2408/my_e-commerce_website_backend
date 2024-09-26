@@ -3,6 +3,7 @@ package kimlam_do.my_e_commerce_website.service.order;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import kimlam_do.my_e_commerce_website.model.dto.OrderDTO;
 import kimlam_do.my_e_commerce_website.model.entity.*;
@@ -10,10 +11,12 @@ import kimlam_do.my_e_commerce_website.repository.*;
 import kimlam_do.my_e_commerce_website.validator.EmailValidator;
 import kimlam_do.my_e_commerce_website.validator.PhoneNumberValidator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +38,107 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<OrderDTO> getAllOrders() {
         List<Order> orders = orderRepository.findAll();
+        return orders.stream().map(OrderDTO::toDTO).collect(Collectors.toList());
+    }
+
+    @Override
+    public OrderDTO findById(int id) {
+        Optional<Order> orderOptional = orderRepository.findById(id);
+        if (!orderOptional.isPresent()) {
+            throw new EntityNotFoundException("Không tìm thấy đơn hàng với ID: " + id);
+        }
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(currentUserEmail);
+        if (currentUser == null) {
+            throw new RuntimeException("Không tồn tại người dùng với email: " + currentUserEmail);
+        }
+
+        Integer currentUserId = currentUser.getId();
+        boolean isAdmin = authentication.getAuthorities().stream().anyMatch(role -> role.getAuthority().equals("Quản trị hệ thống") || role.getAuthority().equals("Nhân viên bán hàng") || role.getAuthority().equals("Quản lý nội dung"));
+
+        Order order = orderOptional.get();
+        if (!isAdmin && !order.getUser().getId().equals(currentUserId)) {
+            throw new AccessDeniedException("Bạn không có quyền truy cập dữ liệu này.");
+        }
+
+        return OrderDTO.toDTO(order);
+    }
+
+    @Override
+    public ObjectNode cancelOrder(Integer orderId) {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode response = mapper.createObjectNode();
+
+        // Lấy thông tin người dùng hiện tại
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(currentUserEmail);
+        if (currentUser == null) {
+            response.put("message", "Không tồn tại người dùng với email: " + currentUserEmail);
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra xem đơn hàng có tồn tại không
+        Optional<Order> orderOptional = orderRepository.findById(orderId);
+        if (!orderOptional.isPresent()) {
+            response.put("message", "Không tồn tại đơn hàng với id: " + orderId);
+            response.put("status", "error");
+            return response;
+        }
+        Order order = orderOptional.get();
+
+        // Kiểm tra quyền của người dùng
+        if (!currentUser.getId().equals(order.getUser().getId())) {
+            response.put("message", "Bạn không có quyền hủy đơn hàng này");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra thời gian tạo đơn hàng
+        if (order.getCreatedTime().isBefore(LocalDateTime.now().minusHours(1))) {
+            response.put("message", "Không thể hủy đơn hàng sau 1 giờ kể từ thời điểm đặt");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra trạng thái của đơn hàng
+        if (order.getStatus() == OrderStatus.PAID) {
+            response.put("message", "Không thể hủy đơn hàng đã thanh toán");
+            response.put("status", "error");
+            return response;
+        }
+
+        if (order.getStatus() != OrderStatus.NEW && order.getStatus() != OrderStatus.PROCESSING && order.getStatus() != OrderStatus.PACKAGED) {
+            response.put("message", "Đơn hàng không thể hủy vì trạng thái không cho phép");
+            response.put("status", "error");
+            return response;
+        }
+
+        // LOGIC hủy đơn hàng ở đây
+
+        response.put("message", "Hủy đơn hàng thành công");
+        response.put("status", "success");
+        return response;
+    }
+
+    @Override
+    public List<OrderDTO> getAllOrdersByUserId(int userId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(currentUserEmail);
+        if (currentUser == null) {
+            throw new RuntimeException("Không tồn tại người dùng với email: " + currentUserEmail);
+        }
+        Integer currentUserId = currentUser.getId();
+        boolean isAdmin = authentication.getAuthorities().stream().anyMatch(role -> role.getAuthority().equals("Quản trị hệ thống") || role.getAuthority().equals("Nhân viên bán hàng") || role.getAuthority().equals("Quản lý nội dung"));
+        if (!isAdmin && userId != currentUserId) {
+            throw new AccessDeniedException("Bạn không có quyền truy cập dữ liệu này.");
+        }
+
+        List<Order> orders = orderRepository.findByUser_Id(userId);
         return orders.stream().map(OrderDTO::toDTO).collect(Collectors.toList());
     }
 
@@ -327,9 +431,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         if (!isUseDefaultAddress) {
-            Address existingAddress = addressRepository.findByAddressLineAndProvinceAndDistrictAndWardAndUser(
-                    addressLine, province, district, ward, userRepository.findById(userId).get()
-            );
+            Address existingAddress = addressRepository.findByAddressLineAndProvinceAndDistrictAndWardAndUser(addressLine, province, district, ward, userRepository.findById(userId).get());
 
             if (existingAddress != null) {
                 // Đã tồn tại một địa chỉ giống nhau trong cơ sở dữ liệu

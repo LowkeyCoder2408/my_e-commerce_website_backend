@@ -10,4 +10,10 @@ public interface OrderService {
     List<OrderDTO> getAllOrders();
 
     ObjectNode addAnOrder(JsonNode jsonData);
+
+    List<OrderDTO> getAllOrdersByUserId(int userId);
+
+    OrderDTO findById(int id);
+
+    ObjectNode cancelOrder(Integer orderId);
 }

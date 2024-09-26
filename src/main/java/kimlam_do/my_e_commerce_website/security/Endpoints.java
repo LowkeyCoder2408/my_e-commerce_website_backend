@@ -26,6 +26,7 @@ public class Endpoints {
             "/users/{userId}",
             "/addresses/find-by-user-id/**",
             "/addresses/default-address/find-by-user-id/**",
+            "/orders/find-by-id/{id}"
     };
 
     public static final String[] PUBLIC_POST_ENDPOINTS = {
@@ -45,6 +46,7 @@ public class Endpoints {
             // Authorization is handled directly in functions
             "/cart-items/update-item",
             "/reviews/update-review",
+            "/orders/cancel-order/{orderId}"
     };
 
     public static final String[] PUBLIC_DELETE_ENDPOINTS = {
