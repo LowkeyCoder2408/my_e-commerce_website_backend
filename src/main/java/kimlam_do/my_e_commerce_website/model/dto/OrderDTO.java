@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 public class OrderDTO {
     private Integer id;
     private LocalDateTime createdTime;
+    private LocalDateTime paidTime;
+    private LocalDateTime deliveredTime;
     private String addressLine;
     private String province;
     private String district;
@@ -40,6 +42,8 @@ public class OrderDTO {
         return OrderDTO.builder()
                 .id(order.getId())
                 .createdTime(order.getCreatedTime())
+                .paidTime(order.getPaidTime())
+                .deliveredTime(order.getDeliveredTime())
                 .addressLine(order.getAddressLine())
                 .province(order.getProvince())
                 .district(order.getDistrict())

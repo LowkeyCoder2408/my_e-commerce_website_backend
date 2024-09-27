@@ -46,7 +46,8 @@ public class Endpoints {
             // Authorization is handled directly in functions
             "/cart-items/update-item",
             "/reviews/update-review",
-            "/orders/cancel-order/{orderId}"
+            "/orders/cancel-order/{orderId}",
+            "/orders/return-request/{orderId}"
     };
 
     public static final String[] PUBLIC_DELETE_ENDPOINTS = {

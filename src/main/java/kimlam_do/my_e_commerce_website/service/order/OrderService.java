@@ -16,4 +16,6 @@ public interface OrderService {
     OrderDTO findById(int id);
 
     ObjectNode cancelOrder(Integer orderId);
+
+    ObjectNode requestReturnOrderItems(Integer orderId);
 }

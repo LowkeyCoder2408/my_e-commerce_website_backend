@@ -67,64 +67,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public ObjectNode cancelOrder(Integer orderId) {
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode response = mapper.createObjectNode();
-
-        // Lấy thông tin người dùng hiện tại
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String currentUserEmail = authentication.getName();
-        User currentUser = userRepository.findByEmail(currentUserEmail);
-        if (currentUser == null) {
-            response.put("message", "Không tồn tại người dùng với email: " + currentUserEmail);
-            response.put("status", "error");
-            return response;
-        }
-
-        // Kiểm tra xem đơn hàng có tồn tại không
-        Optional<Order> orderOptional = orderRepository.findById(orderId);
-        if (!orderOptional.isPresent()) {
-            response.put("message", "Không tồn tại đơn hàng với id: " + orderId);
-            response.put("status", "error");
-            return response;
-        }
-        Order order = orderOptional.get();
-
-        // Kiểm tra quyền của người dùng
-        if (!currentUser.getId().equals(order.getUser().getId())) {
-            response.put("message", "Bạn không có quyền hủy đơn hàng này");
-            response.put("status", "error");
-            return response;
-        }
-
-        // Kiểm tra thời gian tạo đơn hàng
-        if (order.getCreatedTime().isBefore(LocalDateTime.now().minusHours(1))) {
-            response.put("message", "Không thể hủy đơn hàng sau 1 giờ kể từ thời điểm đặt");
-            response.put("status", "error");
-            return response;
-        }
-
-        // Kiểm tra trạng thái của đơn hàng
-        if (order.getStatus() == OrderStatus.PAID) {
-            response.put("message", "Không thể hủy đơn hàng đã thanh toán");
-            response.put("status", "error");
-            return response;
-        }
-
-        if (order.getStatus() != OrderStatus.NEW && order.getStatus() != OrderStatus.PROCESSING && order.getStatus() != OrderStatus.PACKAGED) {
-            response.put("message", "Đơn hàng không thể hủy vì trạng thái không cho phép");
-            response.put("status", "error");
-            return response;
-        }
-
-        // LOGIC hủy đơn hàng ở đây
-
-        response.put("message", "Hủy đơn hàng thành công");
-        response.put("status", "success");
-        return response;
-    }
-
-    @Override
     public List<OrderDTO> getAllOrdersByUserId(int userId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUserEmail = authentication.getName();
@@ -331,6 +273,7 @@ public class OrderServiceImpl implements OrderService {
         order.setUser(userRepository.findById(userId).get());
         if (!paymentMethod.equals("COD")) {
             order.setStatus(OrderStatus.PAID);
+            order.setPaidTime(LocalDateTime.now());
         } else {
             order.setStatus(OrderStatus.NEW);
         }
@@ -474,6 +417,172 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
 
         response.put("message", "Khởi tạo đơn hàng thành công");
+        response.put("status", "success");
+        return response;
+    }
+
+    @Override
+    public ObjectNode cancelOrder(Integer orderId) {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode response = mapper.createObjectNode();
+
+        // Lấy thông tin người dùng hiện tại
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(currentUserEmail);
+        if (currentUser == null) {
+            response.put("message", "Không tồn tại người dùng với email: " + currentUserEmail);
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra xem đơn hàng có tồn tại không
+        Optional<Order> orderOptional = orderRepository.findById(orderId);
+        if (!orderOptional.isPresent()) {
+            response.put("message", "Không tồn tại đơn hàng với id: " + orderId);
+            response.put("status", "error");
+            return response;
+        }
+        Order order = orderOptional.get();
+
+        // Kiểm tra quyền của người dùng
+        if (!currentUser.getId().equals(order.getUser().getId())) {
+            response.put("message", "Bạn không có quyền hủy đơn hàng này");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra thời gian tạo đơn hàng
+        if (order.getCreatedTime().isBefore(LocalDateTime.now().minusHours(6))) {
+            response.put("message", "Không thể hủy đơn hàng sau 6 giờ kể từ thời điểm đặt hàng");
+            response.put("status", "error");
+            return response;
+        }
+
+        if (order.getStatus() == OrderStatus.DELIVERED || order.getStatus() == OrderStatus.CANCELED || order.getStatus() == OrderStatus.PAID || order.getStatus() == OrderStatus.RETURN_REQUESTED || order.getStatus() == OrderStatus.RETURNED || order.getStatus() == OrderStatus.REFUNDED) {
+            response.put("message", "Không thể hủy đơn hàng vì đang ở trạng thái \"" + order.getStatus().defaultDescription() + '"');
+            response.put("status", "error");
+            return response;
+        }
+
+        // LOGIC hủy đơn hàng ở đây
+        order.setStatus(OrderStatus.CANCELED);
+
+        // Hoàn trả sản phẩm về kho
+        for (OrderDetail orderDetail : order.getOrderDetails()) {
+            Product product = orderDetail.getProduct();
+            int quantityToReturn = orderDetail.getQuantity();
+
+            // Kiểm tra trước khi cập nhật
+            if (product.getSoldQuantity() >= quantityToReturn) {
+                product.setQuantity(product.getQuantity() + quantityToReturn);
+                product.setSoldQuantity(product.getSoldQuantity() - quantityToReturn);
+                productRepository.save(product);
+            } else {
+                response.put("message", "Không thể hoàn trả số lượng lớn hơn số lượng đã bán cho sản phẩm " + product.getId());
+                response.put("status", "error");
+                return response;
+            }
+        }
+
+        // Tạo OrderTrack
+        OrderTrack orderTrack = new OrderTrack();
+        orderTrack.setNote(order.getNote());
+        orderTrack.setStatus(OrderStatus.CANCELED);
+        orderTrack.setOrder(order);
+
+        List<OrderTrack> orderTracks = order.getOrderTracks();
+        if (orderTracks == null) {
+            orderTracks = new ArrayList<>();
+            order.setOrderTracks(orderTracks);
+        }
+        orderTracks.add(orderTrack);
+        orderRepository.save(order);
+
+        response.put("message", "Hủy đơn hàng ORD-" + orderId + " thành công");
+        response.put("status", "success");
+        return response;
+    }
+
+    @Override
+    public ObjectNode requestReturnOrderItems(Integer orderId) {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode response = mapper.createObjectNode();
+
+        // Lấy thông tin người dùng hiện tại
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(currentUserEmail);
+        if (currentUser == null) {
+            response.put("message", "Không tồn tại người dùng với email: " + currentUserEmail);
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra xem đơn hàng có tồn tại không
+        Optional<Order> orderOptional = orderRepository.findById(orderId);
+        if (!orderOptional.isPresent()) {
+            response.put("message", "Không tồn tại đơn hàng với id: " + orderId);
+            response.put("status", "error");
+            return response;
+        }
+        Order order = orderOptional.get();
+
+        // Kiểm tra quyền của người dùng
+        if (!currentUser.getId().equals(order.getUser().getId())) {
+            response.put("message", "Bạn không có quyền yêu cầu hoàn trả sản phẩm trong đơn hàng này");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra trạng thái đơn hàng
+        if (order.getStatus() == OrderStatus.NEW || order.getStatus() == OrderStatus.PROCESSING || order.getStatus() == OrderStatus.PACKAGED || order.getStatus() == OrderStatus.PICKED || order.getStatus() == OrderStatus.SHIPPING || order.getStatus() == OrderStatus.CANCELED) {
+            response.put("message", "Chỉ có thể yêu cầu hoàn trả cho đơn hàng đã giao hoặc đã thanh toán");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra nếu đơn hàng đã được yêu cầu hoàn trả, đã hoàn trả, hoặc đã hoàn tiền
+        if (order.getStatus() == OrderStatus.RETURN_REQUESTED || order.getStatus() == OrderStatus.RETURNED || order.getStatus() == OrderStatus.REFUNDED) {
+            response.put("message", "Đơn hàng này đã được yêu cầu hoàn trả hoặc đã hoàn trả/hoàn tiền");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra thời gian trả hàng (ví dụ: trong vòng 30 ngày từ ngày giao hàng)
+        if (order.getDeliveredTime() == null) {
+            response.put("message", "Đơn hàng chưa được giao, không thể yêu cầu hoàn trả");
+            response.put("status", "error");
+            return response;
+        }
+
+        if (order.getDeliveredTime().isBefore(LocalDateTime.now().minusDays(30))) {
+            response.put("message", "Không thể yêu cầu hoàn trả sau 30 ngày kể từ khi giao hàng");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Chuyển trạng thái đơn hàng sang RETURN_REQUESTED
+        order.setStatus(OrderStatus.RETURN_REQUESTED);
+
+        // Tạo OrderTrack cho yêu cầu hoàn trả
+        OrderTrack returnRequestTrack = new OrderTrack();
+        returnRequestTrack.setOrder(order);
+        returnRequestTrack.setStatus(OrderStatus.RETURN_REQUESTED); // Trạng thái yêu cầu hoàn trả
+        returnRequestTrack.setNote("Yêu cầu hoàn trả cho đơn hàng ORD-" + orderId);
+
+        // Thêm OrderTrack vào danh sách orderTracks của đơn hàng
+        List<OrderTrack> orderTracks = order.getOrderTracks();
+        if (orderTracks == null) {
+            orderTracks = new ArrayList<>();
+            order.setOrderTracks(orderTracks);
+        }
+        orderTracks.add(returnRequestTrack);
+
+        // Lưu trạng thái đơn hàng và các bản ghi tracking
+        orderRepository.save(order);
+
+        response.put("message", "Yêu cầu hoàn trả sản phẩm thành công");
         response.put("status", "success");
         return response;
     }

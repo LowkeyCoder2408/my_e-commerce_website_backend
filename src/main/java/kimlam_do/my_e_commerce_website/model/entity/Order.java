@@ -17,6 +17,10 @@ public class Order {
 
     private LocalDateTime createdTime;
 
+    private LocalDateTime paidTime;
+
+    private LocalDateTime deliveredTime;
+
     @Column(name = "address_line", nullable = false, length = 64)
     private String addressLine;
 

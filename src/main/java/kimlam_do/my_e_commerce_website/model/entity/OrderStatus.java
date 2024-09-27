@@ -55,6 +55,27 @@ public enum OrderStatus {
         public String defaultDescription() {
             return "Đã bị hủy";
         }
+    },
+
+    RETURN_REQUESTED {
+        @Override
+        public String defaultDescription() {
+            return "Yêu cầu hoàn trả";
+        }
+    },
+
+    RETURNED {
+        @Override
+        public String defaultDescription() {
+            return "Đã hoàn trả";
+        }
+    },
+
+    REFUNDED {
+        @Override
+        public String defaultDescription() {
+            return "Đã hoàn tiền";
+        }
     };
 
     public abstract String defaultDescription();
