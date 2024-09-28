@@ -1,5 +1,8 @@
 package kimlam_do.my_e_commerce_website.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import kimlam_do.my_e_commerce_website.model.dto.UserDTO;
 import kimlam_do.my_e_commerce_website.model.entity.User;
 import kimlam_do.my_e_commerce_website.service.user.UserService;
@@ -20,6 +23,40 @@ public class UserController {
     @GetMapping("/existsByEmail")
     public boolean existsByEmail(@RequestParam(value = "email") String email) {
         return userService.existsByEmail(email);
+    }
+
+    @PutMapping(path = "/forgot-password")
+    public ResponseEntity<ObjectNode> forgotPassword(@RequestBody JsonNode jsonData) {
+        try {
+            ObjectNode response = userService.forgotPassword(jsonData);
+            String status = response.get("status").asText();
+            HttpStatus httpStatus = "error".equals(status) ? HttpStatus.BAD_REQUEST : HttpStatus.OK;
+            return new ResponseEntity<>(response, httpStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("message", "Đã xảy ra lỗi khi yêu cầu lấy lại mật khẩu");
+            errorResponse.put("status", "error");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping(path = "/reset-password")
+    public ResponseEntity<ObjectNode> resetPassword(@RequestBody JsonNode jsonData) {
+        try {
+            ObjectNode response = userService.resetPassword(jsonData);
+            String status = response.get("status").asText();
+            HttpStatus httpStatus = "error".equals(status) ? HttpStatus.BAD_REQUEST : HttpStatus.OK;
+            return new ResponseEntity<>(response, httpStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("message", "Đã xảy ra lỗi khi yêu cầu đổi mật khẩu");
+            errorResponse.put("status", "error");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @GetMapping

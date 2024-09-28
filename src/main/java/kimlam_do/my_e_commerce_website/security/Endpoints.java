@@ -36,6 +36,7 @@ public class Endpoints {
             "/vn-pay/create-payment/**",
 
             // Authorization is handled directly in functions
+            "/users/reset-password",
             "/cart-items/add-item",
             "/favorite-products/add-favorite-product",
             "/reviews/add-review",
@@ -44,6 +45,7 @@ public class Endpoints {
 
     public static final String[] PUBLIC_PUT_ENDPOINTS = {
             // Authorization is handled directly in functions
+            "/users/forgot-password",
             "/cart-items/update-item",
             "/reviews/update-review",
             "/orders/cancel-order/{orderId}",

@@ -42,6 +42,9 @@ public class User {
     @Column(name = "reset_password_token", length = 30)
     private String resetPasswordToken;
 
+    @Column(name = "reset_password_token_expiry_time")
+    private LocalDateTime resetPasswordTokenExpiryTime;
+
     @Column(name = "created_time")
     private LocalDateTime createdTime;
 
@@ -54,15 +57,8 @@ public class User {
 
     private boolean enabled;
 
-    @ManyToMany(fetch = FetchType.EAGER, cascade = {
-            CascadeType.PERSIST, CascadeType.MERGE,
-            CascadeType.DETACH, CascadeType.REFRESH
-    })
-    @JoinTable(
-            name = "user_role",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
+    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.DETACH, CascadeType.REFRESH})
+    @JoinTable(name = "user_role", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
     private List<Role> roles = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
@@ -73,17 +69,6 @@ public class User {
 
     @Override
     public String toString() {
-        return "User{" +
-                "id=" + id +
-                ", firstName='" + firstName + '\'' +
-                ", lastName='" + lastName + '\'' +
-                ", password='" + password + '\'' +
-                ", email='" + email + '\'' +
-                ", phoneNumber='" + phoneNumber + '\'' +
-                ", photo='" + photo + '\'' +
-                ", verificationCode='" + verificationCode + '\'' +
-                ", enabled=" + enabled +
-                ", roles=" + (roles != null ? roles.size() + " roles" : "no roles") +
-                '}';
+        return "User{" + "id=" + id + ", firstName='" + firstName + '\'' + ", lastName='" + lastName + '\'' + ", password='" + password + '\'' + ", email='" + email + '\'' + ", phoneNumber='" + phoneNumber + '\'' + ", photo='" + photo + '\'' + ", verificationCode='" + verificationCode + '\'' + ", enabled=" + enabled + ", roles=" + (roles != null ? roles.size() + " roles" : "no roles") + '}';
     }
 }
