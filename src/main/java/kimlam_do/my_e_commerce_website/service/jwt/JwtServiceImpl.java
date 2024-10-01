@@ -35,7 +35,7 @@ public class JwtServiceImpl implements JwtService {
         if (user != null) {
             claims.put("id", user.getId());
             claims.put("photo", user.getPhoto());
-            String fullName = user.getFirstName() + " " + user.getLastName();
+            String fullName = user.getLastName() + " " + user.getFirstName();
             claims.put("fullName", fullName);
             claims.put("enabled", user.isEnabled());
 

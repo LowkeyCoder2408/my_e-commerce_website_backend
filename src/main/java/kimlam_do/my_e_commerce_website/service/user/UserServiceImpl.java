@@ -35,6 +35,22 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public boolean checkCurrentPassword(String currentPassword, Integer userId) {
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            return false;
+        }
+        if (!user.getEmail().equals(currentEmail)) {
+            return false;
+        }
+        if (passwordEncoder.matches(currentPassword, user.getPassword())) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
     public List<UserDTO> getAllUsers() {
         List<User> users = userRepository.findAll();
         return users.stream().map(UserDTO::toDTO).collect(Collectors.toList());
@@ -136,6 +152,78 @@ public class UserServiceImpl implements UserService {
         return response;
     }
 
+    @Override
+    public ObjectNode changePassword(JsonNode jsonData) {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode response = mapper.createObjectNode();
+
+        // Lấy thông tin từ JSON và kiểm tra tính hợp lệ của userId trước khi chuyển đổi
+        if (!jsonData.has("userId") || jsonData.get("userId").isNull()) {
+            response.put("message", "Mã người dùng không hợp lệ");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Lấy userId từ JSON
+        int userId = jsonData.get("userId").asInt();
+        String currentPassword = jsonData.has("currentPassword") ? jsonData.get("currentPassword").asText() : null;
+        String newPassword = jsonData.has("newPassword") ? jsonData.get("newPassword").asText() : null;
+        String confirmNewPassword = jsonData.has("confirmNewPassword") ? jsonData.get("confirmNewPassword").asText() : null;
+
+        // Lấy userId của người dùng hiện tại từ token (hoặc bất kỳ cơ chế xác thực nào)
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(currentUserEmail);
+        if (currentUser == null) {
+            response.put("message", "Không tồn tại người dùng (đang gọi API) với email: " + currentUserEmail);
+            response.put("status", "error");
+            return response;
+        }
+        Integer currentUserId = currentUser.getId();
+
+        // Kiểm tra người gọi API có cùng id với userId
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            response.put("message", "Người dùng không tồn tại");
+            response.put("status", "error");
+            return response;
+        }
+        if (userId != currentUserId) {
+            response.put("message", "Bạn không được phép đổi mật khẩu cho người khác");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra mật khẩu hiện tại có chính xác không
+        if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPassword())) {
+            response.put("message", "Mật khẩu hiện tại không chính xác");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra tính hợp lệ của mật khẩu mới
+        if (newPassword == null || newPassword.trim().isEmpty() || !PasswordValidator.hasUppercase(newPassword) || !PasswordValidator.hasLowercase(newPassword) || !PasswordValidator.hasDigit(newPassword) || !PasswordValidator.hasSpecialChar(newPassword) || !PasswordValidator.hasMinLength(newPassword, 8)) {
+            response.put("message", "Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ in hoa, chữ in thường, số và ký tự đặc biệt.");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra mật khẩu xác nhận có khớp với mật khẩu mới
+        if (!newPassword.equals(confirmNewPassword)) {
+            response.put("message", "Mật khẩu xác nhận không khớp");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Cập nhật mật khẩu mới
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        response.put("message", "Thay đổi mật khẩu thành công, vui lòng đăng nhập lại");
+        response.put("status", "success");
+        return response;
+    }
+
     private void sendResetPasswordEmail(String email, String resetLink) {
         String subject = "Yêu cầu đặt lại mật khẩu - Tech Hub";
         String message = "<p>Xin chào,</p>";
@@ -145,24 +233,6 @@ public class UserServiceImpl implements UserService {
         message += "<p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>";
 
         emailService.sendEmail("dokimlamut@gmail.com", email, subject, message);
-    }
-
-    @Override
-    public ObjectNode validateResetToken(String token) {
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode response = mapper.createObjectNode();
-
-        // Tìm user có token khớp và token chưa hết hạn
-        User user = userRepository.findByResetPasswordToken(token);
-        if (user == null || user.getResetPasswordTokenExpiryTime().isBefore(LocalDateTime.now())) {
-            response.put("message", "Token không hợp lệ hoặc đã hết hạn");
-            response.put("status", "error");
-            return response;
-        }
-
-        response.put("message", "Token hợp lệ");
-        response.put("status", "success");
-        return response;
     }
 
     public static String formatStringByJson(String json) {

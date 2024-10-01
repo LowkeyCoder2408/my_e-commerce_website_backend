@@ -23,6 +23,7 @@ public class UserDTO {
     private String phoneNumber;
     private String photo;
     private LocalDateTime createdTime;
+    private List<AddressDTO> addresses;
     private boolean enabled;
     private List<String> roles;
     private String authenticationType;
@@ -36,6 +37,7 @@ public class UserDTO {
                 .phoneNumber(user.getPhoneNumber())
                 .photo(user.getPhoto())
                 .createdTime(user.getCreatedTime())
+                .addresses(user.getAddresses().stream().map(AddressDTO::toDTO).collect(Collectors.toList()))
                 .enabled(user.isEnabled())
                 .roles(user.getRoles().stream()
                         .map(Role::getName)

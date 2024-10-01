@@ -22,5 +22,7 @@ public interface UserService {
 
     ObjectNode resetPassword(JsonNode jsonData);
 
-    ObjectNode validateResetToken(String token);
+    boolean checkCurrentPassword(String currentPassword, Integer userId);
+
+    ObjectNode changePassword(JsonNode jsonData);
 }

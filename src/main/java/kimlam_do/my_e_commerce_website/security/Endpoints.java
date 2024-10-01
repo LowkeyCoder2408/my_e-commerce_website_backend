@@ -10,6 +10,7 @@ public class Endpoints {
             "/product-images/**",
             "/reviews/**",
             "/users/existsByEmail/**",
+            "/users/check-current-password/**",
             "/roles/**",
             "/auth/enable",
             "/provinces",
@@ -26,7 +27,8 @@ public class Endpoints {
             "/users/{userId}",
             "/addresses/find-by-user-id/**",
             "/addresses/default-address/find-by-user-id/**",
-            "/orders/find-by-id/{id}"
+            "/orders/find-by-id/{id}",
+            "/orders/find-by-user/**"
     };
 
     public static final String[] PUBLIC_POST_ENDPOINTS = {
@@ -46,6 +48,8 @@ public class Endpoints {
     public static final String[] PUBLIC_PUT_ENDPOINTS = {
             // Authorization is handled directly in functions
             "/users/forgot-password",
+            "/users/change-password",
+            "/users/change-information",
             "/cart-items/update-item",
             "/reviews/update-review",
             "/orders/cancel-order/{orderId}",

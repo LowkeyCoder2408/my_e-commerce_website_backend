@@ -25,6 +25,11 @@ public class UserController {
         return userService.existsByEmail(email);
     }
 
+    @GetMapping("/check-current-password")
+    public boolean checkCurrentPassword(@RequestParam(value = "currentPassword") String currentPassword, @RequestParam(value = "userId") Integer userId) {
+        return userService.checkCurrentPassword(currentPassword, userId);
+    }
+
     @PutMapping(path = "/forgot-password")
     public ResponseEntity<ObjectNode> forgotPassword(@RequestBody JsonNode jsonData) {
         try {
@@ -54,6 +59,23 @@ public class UserController {
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode errorResponse = mapper.createObjectNode();
             errorResponse.put("message", "Đã xảy ra lỗi khi yêu cầu đổi mật khẩu");
+            errorResponse.put("status", "error");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PutMapping(path = "/change-password")
+    public ResponseEntity<ObjectNode> changePassword(@RequestBody JsonNode jsonData) {
+        try {
+            ObjectNode response = userService.changePassword(jsonData);
+            String status = response.get("status").asText();
+            HttpStatus httpStatus = "error".equals(status) ? HttpStatus.BAD_REQUEST : HttpStatus.OK;
+            return new ResponseEntity<>(response, httpStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("message", "Đã xảy ra lỗi khi thay đổi mật khẩu");
             errorResponse.put("status", "error");
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
