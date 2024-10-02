@@ -49,6 +49,7 @@ public class Endpoints {
             // Authorization is handled directly in functions
             "/users/forgot-password",
             "/users/change-password",
+            "/users/change-avatar",
             "/users/change-information",
             "/cart-items/update-item",
             "/reviews/update-review",

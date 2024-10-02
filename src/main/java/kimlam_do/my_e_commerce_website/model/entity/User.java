@@ -36,6 +36,9 @@ public class User {
     @Column(name = "photo")
     private String photo;
 
+    @Column(name = "photo_public_id", nullable = false)
+    private String photoPublicId;
+
     @Column(name = "verification_code", length = 64)
     private String verificationCode;
 

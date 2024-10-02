@@ -8,9 +8,13 @@ import kimlam_do.my_e_commerce_website.model.entity.User;
 import kimlam_do.my_e_commerce_website.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,8 +34,44 @@ public class UserController {
         return userService.checkCurrentPassword(currentPassword, userId);
     }
 
+    @PutMapping(path = "/change-avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ObjectNode> changeAvatar(@RequestParam("avatar") MultipartFile avatar, @RequestParam("userId") Integer userId) throws IOException {
+        try {
+            ObjectNode response = userService.changeAvatar(avatar, userId);
+            String status = response.get("status").asText();
+            HttpStatus httpStatus = "error".equals(status) ? HttpStatus.BAD_REQUEST : HttpStatus.OK;
+            return new ResponseEntity<>(response, httpStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("message", "Đã xảy ra lỗi khi thay đổi ảnh đại diện");
+            errorResponse.put("status", "error");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PutMapping(path = "/change-information")
+    public ResponseEntity<ObjectNode> changeInformation
+            (@RequestBody JsonNode jsonData) {
+        try {
+            ObjectNode response = userService.changeInformation(jsonData);
+            String status = response.get("status").asText();
+            HttpStatus httpStatus = "error".equals(status) ? HttpStatus.BAD_REQUEST : HttpStatus.OK;
+            return new ResponseEntity<>(response, httpStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("message", "Đã xảy ra lỗi khi thay đổi thông tin cá nhân");
+            errorResponse.put("status", "error");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @PutMapping(path = "/forgot-password")
-    public ResponseEntity<ObjectNode> forgotPassword(@RequestBody JsonNode jsonData) {
+    public ResponseEntity<ObjectNode> forgotPassword(@RequestBody JsonNode
+                                                             jsonData) {
         try {
             ObjectNode response = userService.forgotPassword(jsonData);
             String status = response.get("status").asText();
@@ -48,7 +88,8 @@ public class UserController {
     }
 
     @PostMapping(path = "/reset-password")
-    public ResponseEntity<ObjectNode> resetPassword(@RequestBody JsonNode jsonData) {
+    public ResponseEntity<ObjectNode> resetPassword(@RequestBody JsonNode
+                                                            jsonData) {
         try {
             ObjectNode response = userService.resetPassword(jsonData);
             String status = response.get("status").asText();
@@ -65,7 +106,8 @@ public class UserController {
     }
 
     @PutMapping(path = "/change-password")
-    public ResponseEntity<ObjectNode> changePassword(@RequestBody JsonNode jsonData) {
+    public ResponseEntity<ObjectNode> changePassword(@RequestBody JsonNode
+                                                             jsonData) {
         try {
             ObjectNode response = userService.changePassword(jsonData);
             String status = response.get("status").asText();
