@@ -18,15 +18,10 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 public class CategoryDTO {
     private Integer id;
-
     private String name;
-
     private String alias;
-
     private String image;
-
     private boolean enabled;
-
     private List<Integer> brandIds = new ArrayList<>();
 
     public static CategoryDTO toDTO(Category category) {

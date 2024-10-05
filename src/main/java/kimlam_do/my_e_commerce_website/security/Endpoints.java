@@ -9,6 +9,8 @@ public class Endpoints {
             "/categories/**",
             "/product-images/**",
             "/reviews/**",
+            "/blogs/**",
+            "/blog-categories/**",
             "/users/existsByEmail/**",
             "/users/check-current-password/**",
             "/roles/**",
