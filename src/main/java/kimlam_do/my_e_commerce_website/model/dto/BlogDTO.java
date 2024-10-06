@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @Builder
@@ -17,6 +19,8 @@ public class BlogDTO {
     private String featuredImage;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private int likesCount;
+    private List<BlogCommentDTO> comments;
 
     public static BlogDTO toDTO(Blog blog) {
         return (blog == null) ? null : BlogDTO.builder()
@@ -28,6 +32,8 @@ public class BlogDTO {
                 .featuredImage(blog.getFeaturedImage())
                 .createdAt(blog.getCreatedAt())
                 .updatedAt(blog.getUpdatedAt())
+                .likesCount(blog.getLikesCount())
+                .comments(blog.getComments().stream().map(BlogCommentDTO::toDTO).collect(Collectors.toList()))
                 .build();
     }
 }

@@ -46,6 +46,12 @@ public class Blog {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "likes_count", nullable = false)
+    private int likesCount = 0;
+
+    @OneToMany(mappedBy = "blog", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BlogComment> comments = new ArrayList<>();
+
     @Column(nullable = false)
     private boolean enabled;
 

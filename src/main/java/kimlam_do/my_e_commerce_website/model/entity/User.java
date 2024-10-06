@@ -58,6 +58,9 @@ public class User {
     @Column(name = "authentication_type", length = 10)
     private AuthenticationType authenticationType;
 
+    @Column(name = "last_login_time")
+    private LocalDateTime lastLoginTime;
+
     private boolean enabled;
 
     @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.DETACH, CascadeType.REFRESH})

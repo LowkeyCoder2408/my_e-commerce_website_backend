@@ -27,6 +27,7 @@ public class UserDTO {
     private boolean enabled;
     private List<String> roles;
     private String authenticationType;
+    private LocalDateTime lastLoginTime;
 
     public static UserDTO toDTO(User user) {
         return user == null ? null : UserDTO.builder()
@@ -43,6 +44,7 @@ public class UserDTO {
                         .map(Role::getName)
                         .collect(Collectors.toList()))
                 .authenticationType(user.getAuthenticationType().name())
+                .lastLoginTime(user.getLastLoginTime())
                 .build();
     }
 }

@@ -75,6 +75,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     response.put("status", "error");
                     return response;
                 }
+                user.setLastLoginTime(LocalDateTime.now());
+                userRepository.save(user);
                 String jwt = jwtService.generateToken(authenticationRequest.getEmail());
                 response.put("token", jwt);
                 response.put("message", "Đăng nhập thành công");

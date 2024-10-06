@@ -9,4 +9,8 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 @RepositoryRestResource(exported = false)
 public interface BlogRepository extends JpaRepository<Blog, Integer> {
     Page<Blog> findByBlogCategory_Name(String blogCategoryName, Pageable pageable);
+
+    Page<Blog> findByTitleContaining(String keyword, Pageable pageable);
+
+    Page<Blog> findByTitleContainingAndBlogCategory_Name(String keyword, String blogCategoryName, Pageable pageable);
 }

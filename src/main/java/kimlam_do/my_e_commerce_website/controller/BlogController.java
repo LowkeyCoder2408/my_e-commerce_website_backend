@@ -8,12 +8,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -34,6 +32,34 @@ public class BlogController {
         }
     }
 
+    @GetMapping("{id}")
+    public ResponseEntity<?> getBlogById(@PathVariable("id") int id) {
+        try {
+            Optional<Blog> optionalBlog = blogService.getBlogById(id);
+            if (!optionalBlog.isPresent()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Bài đăng không tồn tại.");
+            }
+            BlogDTO blogDTO = BlogDTO.toDTO(optionalBlog.get());
+            return ResponseEntity.ok(blogDTO);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Đã xảy ra lỗi khi lấy dữ liệu bài đăng theo id.");
+        }
+    }
+
+    @GetMapping("/find-by-name-containing")
+    public ResponseEntity<?> findByNameContaining(@RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "20") int size, @RequestParam(value = "sortBy", defaultValue = "id") String sortBy, @RequestParam(value = "sortDir", defaultValue = "asc") String sortDir, @RequestParam(value = "keyword") String keyword) {
+        try {
+            Page<Blog> blogPage = blogService.findByNameContaining(page, size, sortBy, sortDir, keyword);
+            List<BlogDTO> blogDTOs = blogPage.stream().map(BlogDTO::toDTO).collect(Collectors.toList());
+            PaginatedResponse<BlogDTO> response = new PaginatedResponse<>(blogDTOs, blogPage.getTotalPages(), blogPage.getTotalElements());
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>("Đã xảy ra lỗi khi lấy dữ liệu bài đăng theo tên.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @GetMapping("/find-by-blog-category-name")
     public ResponseEntity<?> findByBlogCategoryName(@RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "20") int size, @RequestParam(value = "sortBy", defaultValue = "id") String sortBy, @RequestParam(value = "sortDir", defaultValue = "asc") String sortDir, @RequestParam(value = "blogCategoryName") String blogCategoryName) {
         try {
@@ -44,6 +70,19 @@ public class BlogController {
         } catch (Exception e) {
             e.printStackTrace();
             return new ResponseEntity<>("Đã xảy ra lỗi khi lấy dữ liệu bài đăng theo danh mục.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/find-by-name-containing-and-blog-category-name")
+    public ResponseEntity<?> findByNameContainingAndBlogCategoryName(@RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "20") int size, @RequestParam(value = "sortBy", defaultValue = "id") String sortBy, @RequestParam(value = "sortDir", defaultValue = "asc") String sortDir, @RequestParam(value = "blogCategoryName") String blogCategoryName, @RequestParam(value = "keyword") String keyword) {
+        try {
+            Page<Blog> blogPage = blogService.findByNameContainingAndBlogCategoryName(page, size, sortBy, sortDir, blogCategoryName, keyword);
+            List<BlogDTO> blogDTOs = blogPage.stream().map(BlogDTO::toDTO).collect(Collectors.toList());
+            PaginatedResponse<BlogDTO> response = new PaginatedResponse<>(blogDTOs, blogPage.getTotalPages(), blogPage.getTotalElements());
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ResponseEntity<>("Đã xảy ra lỗi khi lấy dữ liệu bài đăng theo tên và danh mục.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
