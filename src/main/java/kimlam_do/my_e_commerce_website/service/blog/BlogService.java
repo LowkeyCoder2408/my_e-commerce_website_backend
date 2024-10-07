@@ -16,4 +16,6 @@ public interface BlogService {
     Page<Blog> findByBlogCategoryName(int page, int size, String sortBy, String sortDir, String blogCategoryName);
 
     Page<Blog> findByNameContainingAndBlogCategoryName(int page, int size, String sortBy, String sortDir, String blogCategoryName, String keyword);
+
+    Page<Blog> findByUser(int userId, int page, int size, String sortBy, String sortDir);
 }

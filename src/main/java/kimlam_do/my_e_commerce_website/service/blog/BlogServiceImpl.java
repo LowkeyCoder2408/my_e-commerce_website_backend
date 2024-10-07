@@ -49,4 +49,11 @@ public class BlogServiceImpl implements BlogService {
         Pageable pageable = PageRequest.of(page, size, sort);
         return blogRepository.findByTitleContainingAndBlogCategory_Name(keyword, blogCategoryName, pageable);
     }
+
+    @Override
+    public Page<Blog> findByUser(int userId, int page, int size, String sortBy, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        return blogRepository.findByAuthor_Id(userId, pageable);
+    }
 }

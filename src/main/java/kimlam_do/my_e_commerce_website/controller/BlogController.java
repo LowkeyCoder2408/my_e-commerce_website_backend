@@ -85,4 +85,16 @@ public class BlogController {
             return new ResponseEntity<>("Đã xảy ra lỗi khi lấy dữ liệu bài đăng theo tên và danh mục.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @GetMapping("/find-by-user")
+    public ResponseEntity<?> findByUser(@RequestParam(value = "userId") int userId, @RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "6") int size, @RequestParam(value = "sortBy", defaultValue = "id") String sortBy, @RequestParam(value = "sortDir", defaultValue = "asc") String sortDir) {
+        try {
+            Page<Blog> blogPage = blogService.findByUser(userId, page, size, sortBy, sortDir);
+            List<BlogDTO> blogDTOs = blogPage.getContent().stream().map(BlogDTO::toDTO).collect(Collectors.toList());
+            PaginatedResponse<BlogDTO> response = new PaginatedResponse<>(blogDTOs, blogPage.getTotalPages(), blogPage.getTotalElements());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Đã xảy ra lỗi khi lấy dữ liệu bài đăng theo mã người dùng.");
+        }
+    }
 }
