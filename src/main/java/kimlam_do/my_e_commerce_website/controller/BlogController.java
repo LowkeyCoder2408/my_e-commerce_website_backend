@@ -1,5 +1,8 @@
 package kimlam_do.my_e_commerce_website.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import kimlam_do.my_e_commerce_website.model.dto.PaginatedResponse;
 import kimlam_do.my_e_commerce_website.model.dto.BlogDTO;
 import kimlam_do.my_e_commerce_website.model.entity.Blog;
@@ -9,6 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -95,6 +99,23 @@ public class BlogController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Đã xảy ra lỗi khi lấy dữ liệu bài đăng theo mã người dùng.");
+        }
+    }
+
+    @PostMapping("/add-blog")
+    public ResponseEntity<ObjectNode> addBlog(@RequestParam("title") String title, @RequestParam("content") String content, @RequestParam(value = "blogCategoryName", required = false) String blogCategoryName, @RequestParam(value = "image", required = false) MultipartFile image) {
+        try {
+            ObjectNode response = blogService.addBlog(title, content, blogCategoryName, image);
+            String status = response.get("status").asText();
+            HttpStatus httpStatus = "error".equals(status) ? HttpStatus.BAD_REQUEST : HttpStatus.OK;
+            return new ResponseEntity<>(response, httpStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("message", "Đã xảy ra lỗi khi thêm bài đăng mới");
+            errorResponse.put("status", "error");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

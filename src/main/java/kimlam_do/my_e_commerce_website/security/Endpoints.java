@@ -38,6 +38,7 @@ public class Endpoints {
             "/auth/login",
             "/auth/login/**",
             "/vn-pay/create-payment/**",
+            "/blogs/add-blog",
 
             // Authorization is handled directly in functions
             "/users/reset-password",

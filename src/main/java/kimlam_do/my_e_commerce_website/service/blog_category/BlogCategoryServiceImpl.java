@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -15,5 +16,10 @@ public class BlogCategoryServiceImpl implements BlogCategoryService {
     @Override
     public List<BlogCategory> getAllBlogCategories() {
         return blogCategoryRepository.findAll();
+    }
+
+    @Override
+    public Optional<BlogCategory> findByName(String blogCategoryName) {
+        return blogCategoryRepository.findByName(blogCategoryName);
     }
 }
