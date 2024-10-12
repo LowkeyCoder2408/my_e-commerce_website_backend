@@ -1,6 +1,5 @@
 package kimlam_do.my_e_commerce_website.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import kimlam_do.my_e_commerce_website.model.dto.PaginatedResponse;
@@ -114,6 +113,40 @@ public class BlogController {
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode errorResponse = mapper.createObjectNode();
             errorResponse.put("message", "Đã xảy ra lỗi khi thêm bài đăng mới");
+            errorResponse.put("status", "error");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PutMapping("/update-blog/{blogId}")
+    public ResponseEntity<ObjectNode> updateBlog(@PathVariable("blogId") int blogId, @RequestParam("title") String title, @RequestParam("content") String content, @RequestParam(value = "blogCategoryName", required = false) String blogCategoryName, @RequestParam(value = "image", required = false) MultipartFile image) {
+        try {
+            ObjectNode response = blogService.updateBlog(blogId, title, content, blogCategoryName, image);
+            String status = response.get("status").asText();
+            HttpStatus httpStatus = "error".equals(status) ? HttpStatus.BAD_REQUEST : HttpStatus.OK;
+            return new ResponseEntity<>(response, httpStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("message", "Đã xảy ra lỗi khi cập nhật bài đăng");
+            errorResponse.put("status", "error");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @DeleteMapping("/delete-blog/{blogId}")
+    private ResponseEntity<ObjectNode> deleteBlog(@PathVariable int blogId) {
+        try {
+            ObjectNode response = blogService.deleteBlog(blogId);
+            String status = response.get("status").asText();
+            HttpStatus httpStatus = "error".equals(status) ? HttpStatus.BAD_REQUEST : HttpStatus.OK;
+            return new ResponseEntity<>(response, httpStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("message", "Đã xảy ra lỗi khi xóa bài đăng của bạn");
             errorResponse.put("status", "error");
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
