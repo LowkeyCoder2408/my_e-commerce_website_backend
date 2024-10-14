@@ -32,7 +32,8 @@ public class BlogDTO {
                 .featuredImage(blog.getFeaturedImage())
                 .createdAt(blog.getCreatedAt())
                 .updatedAt(blog.getUpdatedAt())
-                .likesCount(blog.getLikesCount())
+//                .likesCount(blog.getLikesCount())
+                .likesCount(blog.getLikedBlogs().toArray().length)
                 .comments(blog.getComments().stream().map(BlogCommentDTO::toDTO).collect(Collectors.toList()))
                 .build();
     }

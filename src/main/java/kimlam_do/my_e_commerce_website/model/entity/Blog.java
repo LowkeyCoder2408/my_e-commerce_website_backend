@@ -22,7 +22,8 @@ public class Blog {
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Lob
+    @Column(nullable = false, columnDefinition = "LONGTEXT")
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -45,14 +46,17 @@ public class Blog {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "likes_count", nullable = false)
-    private int likesCount = 0;
+//    @Column(name = "likes_count", nullable = false)
+//    private int likesCount = 0;
 
     @OneToMany(mappedBy = "blog", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BlogComment> comments = new ArrayList<>();
 
     @Column(nullable = false)
     private boolean enabled;
+
+    @OneToMany(mappedBy = "blog", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<LikedBlog> likedBlogs = new ArrayList<>();
 
     @PrePersist
     public void onCreate() {

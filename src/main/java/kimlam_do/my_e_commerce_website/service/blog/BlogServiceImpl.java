@@ -122,7 +122,7 @@ public class BlogServiceImpl implements BlogService {
         blog.setCreatedAt(LocalDateTime.now());
         blog.setUpdatedAt(LocalDateTime.now());
         blog.setEnabled(true);
-        blog.setLikesCount(0);
+//        blog.setLikesCount(0);
 
         // Xử lý upload hình ảnh nếu có
         if (image != null) {
@@ -133,7 +133,7 @@ public class BlogServiceImpl implements BlogService {
             }
 
             // Kiểm tra kích thước của file ảnh (giới hạn 10MB)
-            long maxSize = 10 * 1024 * 1024; // 10MB
+            long maxSize = 10 * 1024 * 1024;
             if (image.getSize() > maxSize) {
                 response.put("message", "Kích thước tệp ảnh không được vượt quá 10MB");
                 response.put("status", "error");
@@ -159,13 +159,11 @@ public class BlogServiceImpl implements BlogService {
             }
         } else {
             response.put("message", "Không có ảnh được tải lên");
-            response.put("status", "warning");
+            response.put("status", "error");
+            return response;
         }
-
-        // Lưu blog vào database
         blogRepository.save(blog);
 
-        // Trả về phản hồi thành công
         response.put("message", "Thêm bài đăng mới thành công");
         response.put("status", "success");
         return response;
@@ -231,7 +229,7 @@ public class BlogServiceImpl implements BlogService {
         // Kiểm tra nếu có thay đổi so với bài đăng hiện tại
         boolean isTitleChanged = !blog.getTitle().equals(title);
         boolean isContentChanged = !blog.getContent().equals(content);
-        boolean isCategoryChanged = blogCategoryName != null && !blog.getBlogCategory().getName().equals(blogCategoryName);
+        boolean isCategoryChanged = blogCategoryName != null && blog.getBlogCategory().getName() != blogCategoryName;
         boolean isImageChanged = image != null && !image.isEmpty();
 
         if (!isTitleChanged && !isContentChanged && !isCategoryChanged && !isImageChanged) {
@@ -251,7 +249,7 @@ public class BlogServiceImpl implements BlogService {
 
         // Xử lý upload hình ảnh nếu có ảnh được tải lên
         if (isImageChanged) {
-            long maxSize = 10 * 1024 * 1024; // 10MB
+            long maxSize = 10 * 1024 * 1024;
             if (image.getSize() > maxSize) {
                 response.put("message", "Kích thước tệp ảnh không được vượt quá 10MB");
                 response.put("status", "error");
@@ -270,7 +268,6 @@ public class BlogServiceImpl implements BlogService {
                     cloudinaryService.deleteImage(blog.getFeaturedImagePublicId());
                 }
 
-                // Tải ảnh mới
                 Map<String, String> uploadResult = cloudinaryService.uploadImage(image);
                 blog.setFeaturedImage(uploadResult.get("imageUrl"));
                 blog.setFeaturedImagePublicId(uploadResult.get("publicId"));
@@ -282,7 +279,6 @@ public class BlogServiceImpl implements BlogService {
         }
         blogRepository.save(blog);
 
-        // Trả về phản hồi thành công
         response.put("message", "Cập nhật bài đăng thành công");
         response.put("status", "success");
         return response;

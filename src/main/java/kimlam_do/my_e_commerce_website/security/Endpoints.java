@@ -10,6 +10,7 @@ public class Endpoints {
             "/product-images/**",
             "/reviews/**",
             "/blogs/**",
+            "/blog-comments/**",
             "/blog-categories/**",
             "/users/existsByEmail/**",
             "/users/check-current-password/**",
@@ -25,6 +26,7 @@ public class Endpoints {
             // Authorization is handled directly in functions
             "/cart-items/find-by-user/**",
             "/favorite-products/find-by-user/**",
+            "/liked-blogs/find-by-user/**",
             "/reviews/find-by-user-id-and-product-id/**",
             "/users/{userId}",
             "/addresses/find-by-user-id/**",
@@ -45,7 +47,8 @@ public class Endpoints {
             "/cart-items/add-item",
             "/favorite-products/add-favorite-product",
             "/reviews/add-review",
-            "/orders/add-order"
+            "/orders/add-order",
+            "/liked-blogs/like-blog"
     };
 
     public static final String[] PUBLIC_PUT_ENDPOINTS = {

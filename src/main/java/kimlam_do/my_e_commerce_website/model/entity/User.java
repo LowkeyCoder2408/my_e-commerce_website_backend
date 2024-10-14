@@ -76,6 +76,9 @@ public class User {
     @OneToMany(mappedBy = "author", fetch = FetchType.LAZY, cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     private List<Blog> blogs = new ArrayList<>();
 
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<LikedBlog> likedBlogs = new ArrayList<>();
+
     @Override
     public String toString() {
         return "User{" + "id=" + id + ", firstName='" + firstName + '\'' + ", lastName='" + lastName + '\'' + ", password='" + password + '\'' + ", email='" + email + '\'' + ", phoneNumber='" + phoneNumber + '\'' + ", photo='" + photo + '\'' + ", verificationCode='" + verificationCode + '\'' + ", enabled=" + enabled + ", roles=" + (roles != null ? roles.size() + " roles" : "no roles") + '}';
