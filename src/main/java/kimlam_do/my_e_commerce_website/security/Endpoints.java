@@ -48,7 +48,8 @@ public class Endpoints {
             "/favorite-products/add-favorite-product",
             "/reviews/add-review",
             "/orders/add-order",
-            "/liked-blogs/like-blog"
+            "/liked-blogs/like-blog",
+            "/liked-blog-comments/like-comment"
     };
 
     public static final String[] PUBLIC_PUT_ENDPOINTS = {
@@ -68,6 +69,7 @@ public class Endpoints {
             "/cart-items/delete-item/**",
             "/favorite-products/delete-favorite-product",
             "/reviews/delete-review/**",
+            "/liked-blog-comments/unlike-comment"
     };
 
     public static final String[] EMPLOYEE_ENDPOINTS = {

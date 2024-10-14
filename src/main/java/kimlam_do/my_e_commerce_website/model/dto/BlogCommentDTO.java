@@ -19,6 +19,7 @@ public class BlogCommentDTO {
     private boolean isAuthorComment;
     private Integer parentCommentId;
     private List<BlogCommentDTO> replies;
+    private List<LikedBlogCommentDTO> likedBlogComments;
     private String replyTo;
 
     public static BlogCommentDTO toDTO(BlogComment blogComment) {
@@ -36,6 +37,7 @@ public class BlogCommentDTO {
                 .replyTo(blogComment.getParentComment() != null && blogComment.getParentComment().getUser() != null
                         ? blogComment.getParentComment().getUser().getLastName() + " " + blogComment.getParentComment().getUser().getFirstName()
                         : null)
+                .likedBlogComments(blogComment.getLikedBlogComments() != null ? blogComment.getLikedBlogComments().stream().map(LikedBlogCommentDTO::toDTO).collect(Collectors.toList()) : null)
                 .build();
     }
 }
