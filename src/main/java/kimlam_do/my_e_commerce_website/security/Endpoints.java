@@ -49,7 +49,8 @@ public class Endpoints {
             "/reviews/add-review",
             "/orders/add-order",
             "/liked-blogs/like-blog",
-            "/liked-blog-comments/like-comment"
+            "/liked-blog-comments/like-comment",
+            "/blog-comments/add-comment",
     };
 
     public static final String[] PUBLIC_PUT_ENDPOINTS = {
@@ -61,7 +62,8 @@ public class Endpoints {
             "/cart-items/update-item",
             "/reviews/update-review",
             "/orders/cancel-order/{orderId}",
-            "/orders/return-request/{orderId}"
+            "/orders/return-request/{orderId}",
+            "/blog-comments/update-comment",
     };
 
     public static final String[] PUBLIC_DELETE_ENDPOINTS = {
@@ -69,7 +71,8 @@ public class Endpoints {
             "/cart-items/delete-item/**",
             "/favorite-products/delete-favorite-product",
             "/reviews/delete-review/**",
-            "/liked-blog-comments/unlike-comment"
+            "/liked-blog-comments/unlike-comment",
+            "/blog-comments/delete-comment/**"
     };
 
     public static final String[] EMPLOYEE_ENDPOINTS = {

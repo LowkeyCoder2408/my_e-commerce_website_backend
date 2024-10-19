@@ -90,7 +90,7 @@ public class BlogController {
     }
 
     @GetMapping("/find-by-user")
-    public ResponseEntity<?> findByUser(@RequestParam(value = "userId") int userId, @RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "6") int size, @RequestParam(value = "sortBy", defaultValue = "id") String sortBy, @RequestParam(value = "sortDir", defaultValue = "asc") String sortDir) {
+    public ResponseEntity<?> findByUser(@RequestParam(value = "userId") int userId, @RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "6") int size, @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy, @RequestParam(value = "sortDir", defaultValue = "desc") String sortDir) {
         try {
             Page<Blog> blogPage = blogService.findByUser(userId, page, size, sortBy, sortDir);
             List<BlogDTO> blogDTOs = blogPage.getContent().stream().map(BlogDTO::toDTO).collect(Collectors.toList());

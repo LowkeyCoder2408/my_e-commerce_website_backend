@@ -537,7 +537,7 @@ public class OrderServiceImpl implements OrderService {
 
         // Kiểm tra trạng thái đơn hàng
         if (order.getStatus() == OrderStatus.NEW || order.getStatus() == OrderStatus.PROCESSING || order.getStatus() == OrderStatus.PACKAGED || order.getStatus() == OrderStatus.PICKED || order.getStatus() == OrderStatus.SHIPPING || order.getStatus() == OrderStatus.CANCELED) {
-            response.put("message", "Chỉ có thể yêu cầu hoàn trả cho đơn hàng đã giao hoặc đã thanh toán");
+            response.put("message", "Chỉ được yêu cầu hoàn trả cho đơn hàng đã giao/đã thanh toán");
             response.put("status", "error");
             return response;
         }

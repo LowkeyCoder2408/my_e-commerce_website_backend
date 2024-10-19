@@ -41,11 +41,19 @@ public class BlogComment {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
     @OneToMany(mappedBy = "blogComment", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<LikedBlogComment> likedBlogComments = new ArrayList<>();
 
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }

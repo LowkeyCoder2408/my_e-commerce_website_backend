@@ -16,6 +16,7 @@ public class BlogCommentDTO {
     private Integer blogId;
     private UserDTO user;
     private LocalDateTime createdAt;
+    private LocalDateTime lastUpdatedTime;
     private boolean isAuthorComment;
     private Integer parentCommentId;
     private List<BlogCommentDTO> replies;
@@ -29,6 +30,7 @@ public class BlogCommentDTO {
                 .blogId(blogComment.getBlog() != null ? blogComment.getBlog().getId() : null)
                 .user(blogComment.getUser() != null ? UserDTO.toDTO(blogComment.getUser()) : null)
                 .createdAt(blogComment.getCreatedAt())
+                .lastUpdatedTime(blogComment.getUpdatedAt())
                 .isAuthorComment(blogComment.getBlog().getAuthor().getId() == blogComment.getUser().getId())
                 .parentCommentId(blogComment.getParentComment() != null ? blogComment.getParentComment().getId() : null)
                 .replies(blogComment.getReplies() != null ? blogComment.getReplies().stream()
