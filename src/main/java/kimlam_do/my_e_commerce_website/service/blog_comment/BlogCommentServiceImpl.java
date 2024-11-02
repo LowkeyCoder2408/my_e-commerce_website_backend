@@ -136,7 +136,7 @@ public class BlogCommentServiceImpl implements BlogCommentService {
             return response;
         }
 
-        // Lấy thông tin người dùng hiện tại từ SecurityContext
+        // Lấy thông tin người dùng hiện tại
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUsername = authentication.getName();
 
