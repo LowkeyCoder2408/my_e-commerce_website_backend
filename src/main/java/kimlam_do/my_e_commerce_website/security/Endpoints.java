@@ -12,6 +12,7 @@ public class Endpoints {
             "/blogs/**",
             "/blog-comments/**",
             "/blog-categories/**",
+            "/users/customers",
             "/users/existsByEmail/**",
             "/users/check-current-password/**",
             "/roles/**",
@@ -32,7 +33,7 @@ public class Endpoints {
             "/addresses/find-by-user-id/**",
             "/addresses/default-address/find-by-user-id/**",
             "/orders/find-by-id/{id}",
-            "/orders/find-by-user/**"
+            "/orders/find-by-user/**",
     };
 
     public static final String[] PUBLIC_POST_ENDPOINTS = {
@@ -88,6 +89,7 @@ public class Endpoints {
     };
 
     public static final String[] COMMON_ADMIN_ENDPOINTS = {
+            "/users/administrator",
             "/favorite-products/**",
             "/orders/**",
             "/order-details/**",

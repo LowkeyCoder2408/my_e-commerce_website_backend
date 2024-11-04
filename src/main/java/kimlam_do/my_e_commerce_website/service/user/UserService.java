@@ -30,4 +30,8 @@ public interface UserService {
     ObjectNode changeInformation(JsonNode jsonData);
 
     ObjectNode changeAvatar(MultipartFile avatar, Integer userId);
+
+    List<User> getCustomers();
+
+    List<User> getCommonAdministrators();
 }

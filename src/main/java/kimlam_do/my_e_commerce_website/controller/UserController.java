@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/users")
@@ -149,6 +150,30 @@ public class UserController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Đã xảy ra lỗi khi lấy dữ liệu người dùng theo id.");
+        }
+    }
+
+    @GetMapping("/customers")
+    private ResponseEntity<?> getCustomers() {
+        try {
+            List<User> users = userService.getCustomers();
+            List<UserDTO> userDTOs = users.stream().map(UserDTO::toDTO).collect(Collectors.toList());
+            return ResponseEntity.ok(userDTOs);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Đã xảy ra lỗi khi lấy dữ liệu khách hàng.");
+        }
+    }
+
+    @GetMapping("/administrators")
+    private ResponseEntity<?> getCommonAdministrators() {
+        try {
+            List<User> users = userService.getCommonAdministrators();
+            List<UserDTO> userDTOs = users.stream().map(UserDTO::toDTO).collect(Collectors.toList());
+            return ResponseEntity.ok(userDTOs);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Đã xảy ra lỗi khi lấy dữ liệu quản trị viên.");
         }
     }
 }

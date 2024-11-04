@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import kimlam_do.my_e_commerce_website.model.dto.OrderDTO;
+import kimlam_do.my_e_commerce_website.model.entity.OrderStatus;
 import kimlam_do.my_e_commerce_website.service.order.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/orders")
@@ -31,6 +33,27 @@ public class OrderController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Đã xảy ra lỗi trong quá trình xử lý yêu cầu lấy danh sách tất cả các đơn hàng");
         }
+    }
+
+    @GetMapping("/calculate-total-amount-by-user-id")
+    public ResponseEntity<?> calculateTotalAmountByUserId(@RequestParam("userId") Integer userId) {
+        Long totalAmount = orderService.calculateTotalAmountByUserId(userId);
+        if (totalAmount == null) {
+            totalAmount = 0L;
+        }
+        return ResponseEntity.ok(totalAmount);
+    }
+
+    @GetMapping("/calculate-total-amount-by-month")
+    public ResponseEntity<Integer> calculateTotalAmountByMonth(
+            @RequestParam("month") int month,
+            @RequestParam("year") int year) {
+        Integer totalAmount = orderService.calculateTotalAmountByMonth(month, year);
+
+        if (totalAmount == null) {
+            totalAmount = 0;
+        }
+        return ResponseEntity.ok(totalAmount);
     }
 
     @GetMapping("/find-by-id/{id}")
@@ -110,5 +133,10 @@ public class OrderController {
             errorResponse.put("status", "error");
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    @GetMapping("/status-percentage")
+    public Map<String, Double> getOrderStatusPercentage() {
+        return orderService.calculateOrderPercentageByStatus();
     }
 }

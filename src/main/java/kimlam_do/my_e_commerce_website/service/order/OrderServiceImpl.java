@@ -17,9 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -598,5 +596,43 @@ public class OrderServiceImpl implements OrderService {
             }
         }
         return false;
+    }
+
+    @Override
+    public Long calculateTotalAmountByUserId(Integer userId) {
+        return orderRepository.calculateTotalAmountByUserId(userId);
+    }
+
+    @Override
+    public Integer calculateTotalAmountByMonth(int month, int year) {
+        return orderRepository.calculateTotalAmountByMonth(month, year);
+    }
+
+    @Override
+    public Map<String, Double> calculateOrderPercentageByStatus() {
+        List<Object[]> counts = orderRepository.countOrdersByStatus();
+        long totalOrders = 0;
+
+        // Sử dụng một map để lưu trữ số lượng theo trạng thái
+        Map<OrderStatus, Long> countMap = new HashMap<>();
+
+        for (Object[] count : counts) {
+            OrderStatus status = (OrderStatus) count[0]; // Lấy OrderStatus từ phần tử đầu tiên
+            Long countValue = ((Number) count[1]).longValue(); // Lấy số lượng dưới dạng Long
+            countMap.put(status, countValue); // Lưu vào map
+            totalOrders += countValue; // Cộng dồn vào tổng số đơn hàng
+        }
+
+        Map<String, Double> percentages = new HashMap<>();
+        if (totalOrders > 0) { // Kiểm tra chia cho 0
+            for (Map.Entry<OrderStatus, Long> entry : countMap.entrySet()) {
+                OrderStatus status = entry.getKey();
+                long countByStatus = entry.getValue(); // Sử dụng số lượng từ map
+                double percentage = (double) countByStatus / totalOrders * 100;
+                percentages.put(status.defaultDescription(), percentage); // Sử dụng mô tả hoặc tên tùy theo yêu cầu
+            }
+        }
+
+        return percentages;
     }
 }

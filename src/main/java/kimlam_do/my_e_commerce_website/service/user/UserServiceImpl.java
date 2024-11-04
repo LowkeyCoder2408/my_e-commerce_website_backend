@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import kimlam_do.my_e_commerce_website.model.dto.UserDTO;
+import kimlam_do.my_e_commerce_website.model.entity.Role;
 import kimlam_do.my_e_commerce_website.model.entity.User;
+import kimlam_do.my_e_commerce_website.repository.RoleRepository;
 import kimlam_do.my_e_commerce_website.repository.UserRepository;
 import kimlam_do.my_e_commerce_website.service.cloudinary.CloudinaryService;
 import kimlam_do.my_e_commerce_website.service.email.EmailService;
@@ -32,6 +34,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final JwtService jwtService;
@@ -152,6 +155,22 @@ public class UserServiceImpl implements UserService {
         }
 
         return response;
+    }
+
+    @Override
+    public List<User> getCustomers() {
+        Role customerRole = roleRepository.findByName("Khách hàng");
+        return userRepository.findAll().stream().filter(user -> user.getRoles().contains(customerRole)).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<User> getCommonAdministrators() {
+        Role adminRole = roleRepository.findByName("Quản trị hệ thống");
+        Role contentManagerRole = roleRepository.findByName("Quản lý nội dung");
+        Role salesRole = roleRepository.findByName("Nhân viên bán hàng");
+
+        // Lọc danh sách người dùng có chứa ít nhất một trong ba vai trò trên
+        return userRepository.findAll().stream().filter(user -> user.getRoles().contains(adminRole) || user.getRoles().contains(contentManagerRole) || user.getRoles().contains(salesRole)).collect(Collectors.toList());
     }
 
     @Override
