@@ -53,8 +53,7 @@ public class UserController {
     }
 
     @PutMapping(path = "/change-information")
-    public ResponseEntity<ObjectNode> changeInformation
-            (@RequestBody JsonNode jsonData) {
+    public ResponseEntity<ObjectNode> changeInformation(@RequestBody JsonNode jsonData) {
         try {
             ObjectNode response = userService.changeInformation(jsonData);
             String status = response.get("status").asText();
@@ -71,8 +70,7 @@ public class UserController {
     }
 
     @PutMapping(path = "/forgot-password")
-    public ResponseEntity<ObjectNode> forgotPassword(@RequestBody JsonNode
-                                                             jsonData) {
+    public ResponseEntity<ObjectNode> forgotPassword(@RequestBody JsonNode jsonData) {
         try {
             ObjectNode response = userService.forgotPassword(jsonData);
             String status = response.get("status").asText();
@@ -89,8 +87,7 @@ public class UserController {
     }
 
     @PostMapping(path = "/reset-password")
-    public ResponseEntity<ObjectNode> resetPassword(@RequestBody JsonNode
-                                                            jsonData) {
+    public ResponseEntity<ObjectNode> resetPassword(@RequestBody JsonNode jsonData) {
         try {
             ObjectNode response = userService.resetPassword(jsonData);
             String status = response.get("status").asText();
@@ -107,8 +104,7 @@ public class UserController {
     }
 
     @PutMapping(path = "/change-password")
-    public ResponseEntity<ObjectNode> changePassword(@RequestBody JsonNode
-                                                             jsonData) {
+    public ResponseEntity<ObjectNode> changePassword(@RequestBody JsonNode jsonData) {
         try {
             ObjectNode response = userService.changePassword(jsonData);
             String status = response.get("status").asText();
@@ -174,6 +170,57 @@ public class UserController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Đã xảy ra lỗi khi lấy dữ liệu quản trị viên.");
+        }
+    }
+
+    @PostMapping("/add-user")
+    public ResponseEntity<ObjectNode> addUser(@RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName, @RequestParam("password") String password, @RequestParam("email") String email, @RequestParam("phoneNumber") String phoneNumber, @RequestParam("rolesJson") String rolesJson, @RequestParam(value = "photo", required = false) MultipartFile photo) {
+        try {
+            ObjectNode response = userService.addUser(firstName, lastName, password, email, phoneNumber, rolesJson, photo);
+            String status = response.get("status").asText();
+            HttpStatus httpStatus = "error".equals(status) ? HttpStatus.BAD_REQUEST : HttpStatus.OK;
+            return new ResponseEntity<>(response, httpStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("message", "Đã xảy ra lỗi khi thêm người dùng mới");
+            errorResponse.put("status", "error");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PutMapping("/update-user")
+    public ResponseEntity<ObjectNode> updateUser(@RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName, @RequestParam("phoneNumber") String phoneNumber, @RequestParam("rolesJson") String rolesJson, @RequestParam(value = "photo", required = false) MultipartFile photo) {
+        try {
+            ObjectNode response = userService.updateUser(firstName, lastName, phoneNumber, rolesJson, photo);
+            String status = response.get("status").asText();
+            HttpStatus httpStatus = "error".equals(status) ? HttpStatus.BAD_REQUEST : HttpStatus.OK;
+            return new ResponseEntity<>(response, httpStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("message", "Đã xảy ra lỗi khi cập nhật thông tin người dùng");
+            errorResponse.put("status", "error");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @DeleteMapping(path = "/delete-user/{userId}")
+    public ResponseEntity<ObjectNode> deleteUser(@PathVariable Integer userId) {
+        try {
+            ObjectNode response = userService.deleteUser(userId);
+            String status = response.get("status").asText();
+            HttpStatus httpStatus = "error".equals(status) ? HttpStatus.BAD_REQUEST : HttpStatus.OK;
+            return new ResponseEntity<>(response, httpStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("message", "Đã xảy ra lỗi khi yêu cầu xóa người dùng");
+            errorResponse.put("status", "error");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

@@ -23,6 +23,7 @@ public class Endpoints {
             "/districts/find-by-province-name/**",
             "/wards/find-by-province-name-and-district-name/**",
             "/delivery-methods",
+            "/roles",
             "/vn-pay/**",
             // Authorization is handled directly in functions
             "/cart-items/find-by-user/**",
@@ -52,6 +53,7 @@ public class Endpoints {
             "/liked-blogs/like-blog",
             "/liked-blog-comments/like-comment",
             "/blog-comments/add-comment",
+            "/users/add-user",
     };
 
     public static final String[] PUBLIC_PUT_ENDPOINTS = {
@@ -65,6 +67,7 @@ public class Endpoints {
             "/orders/cancel-order/{orderId}",
             "/orders/return-request/{orderId}",
             "/blog-comments/update-comment",
+            "/users/update-user",
     };
 
     public static final String[] PUBLIC_DELETE_ENDPOINTS = {

@@ -1,9 +1,12 @@
 package kimlam_do.my_e_commerce_website.service.user;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import kimlam_do.my_e_commerce_website.model.dto.UserDTO;
+import kimlam_do.my_e_commerce_website.model.entity.AuthenticationType;
 import kimlam_do.my_e_commerce_website.model.entity.Role;
 import kimlam_do.my_e_commerce_website.model.entity.User;
 import kimlam_do.my_e_commerce_website.repository.RoleRepository;
@@ -25,9 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -171,6 +172,363 @@ public class UserServiceImpl implements UserService {
 
         // Lọc danh sách người dùng có chứa ít nhất một trong ba vai trò trên
         return userRepository.findAll().stream().filter(user -> user.getRoles().contains(adminRole) || user.getRoles().contains(contentManagerRole) || user.getRoles().contains(salesRole)).collect(Collectors.toList());
+    }
+
+    @Override
+    public ObjectNode addUser(String firstName, String lastName, String password, String email, String phoneNumber, String rolesJson, MultipartFile photo) {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode response = mapper.createObjectNode();
+
+        // Lấy người dùng hiện tại từ SecurityContextHolder
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(currentUserEmail);
+        if (currentUser == null) {
+            response.put("message", "Không tồn tại người dùng (đang gọi API)");
+            response.put("status", "error");
+            return null;
+        }
+
+        // Kiểm tra quyền "Quản trị hệ thống" hoặc "Quản lý nội dung"
+        boolean isAdmin = currentUser.getRoles().stream().anyMatch(role -> role.getName().equals("Quản trị hệ thống") || role.getName().equals("Quản lý nội dung"));
+
+        if (!isAdmin) {
+            response.put("message", "Bạn không có quyền thêm người dùng");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra email hợp lệ
+        if (!EmailValidator.isValidEmail(email)) {
+            response.put("message", "Email không hợp lệ");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra email đã tồn tại
+        if (userRepository.findByEmail(email) != null) {
+            response.put("message", "Email đã được sử dụng");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra các trường thông tin người dùng
+        if (firstName == null || firstName.trim().isEmpty()) {
+            response.put("message", "Tên không được để trống");
+            response.put("status", "error");
+            return response;
+        }
+        if (lastName == null || lastName.trim().isEmpty()) {
+            response.put("message", "Họ không được để trống");
+            response.put("status", "error");
+            return response;
+        }
+        if (password == null || password.trim().isEmpty() || !PasswordValidator.hasUppercase(password) || !PasswordValidator.hasLowercase(password) || !PasswordValidator.hasDigit(password) || !PasswordValidator.hasSpecialChar(password) || !PasswordValidator.hasMinLength(password, 8)) {
+            response.put("message", "Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ in hoa, chữ in thường, số và ký tự đặc biệt");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Chuyển đổi chuỗi JSON roles sang danh sách các vai trò
+        List<String> roleNames;
+        try {
+            roleNames = mapper.readValue(rolesJson, new TypeReference<List<String>>() {
+            });
+        } catch (JsonProcessingException e) {
+            response.put("message", "Định dạng roles không hợp lệ");
+            response.put("status", "error");
+            return response;
+        }
+
+        if (roleNames.isEmpty()) {
+            response.put("message", "Người dùng phải có ít nhất một vai trò");
+            response.put("status", "error");
+            return response;
+        }
+        if (roleNames.size() > 2) {
+            response.put("message", "Người dùng chỉ có thể có tối đa 2 vai trò");
+            response.put("status", "error");
+            return response;
+        }
+
+        List<Role> roles = new ArrayList<>();
+        for (String roleName : roleNames) {
+            Role role = roleRepository.findByName(roleName);
+            if (role == null) {
+                response.put("message", "Vai trò không hợp lệ: " + roleName);
+                response.put("status", "error");
+                return response;
+            }
+            roles.add(role);
+        }
+
+        // Xử lý ảnh đại diện nếu có
+        String photoUrl = null;
+        String photoPublicId = null;
+        if (photo != null && !photo.isEmpty()) {
+            if (photo.getSize() > 10 * 1024 * 1024) { // Giới hạn 10MB
+                response.put("message", "Kích thước ảnh vượt quá 10MB");
+                response.put("status", "error");
+                return response;
+            }
+            if (!photo.getContentType().startsWith("image/")) {
+                response.put("message", "Chỉ chấp nhận ảnh");
+                response.put("status", "error");
+                return response;
+            }
+            try {
+                Map<String, String> uploadResult = cloudinaryService.uploadImage(photo);
+                photoUrl = uploadResult.get("imageUrl");
+                photoPublicId = uploadResult.get("publicId");
+            } catch (Exception e) {
+                response.put("message", "Lỗi khi tải ảnh lên");
+                response.put("status", "error");
+                return response;
+            }
+        }
+
+        // Tạo người dùng mới
+        User user = new User();
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setEmail(email);
+        user.setPhoneNumber(phoneNumber);
+        user.setPhoto(photoUrl);
+        user.setPhotoPublicId(photoPublicId);
+        user.setAuthenticationType(AuthenticationType.DATABASE);
+        user.setRoles(roles);
+
+        userRepository.save(user);
+
+        response.put("message", "Thêm người dùng mới thành công");
+        response.put("status", "success");
+        return response;
+    }
+
+    @Override
+    public ObjectNode updateUser(String firstName, String lastName, String phoneNumber, String rolesJson, MultipartFile photo) {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode response = mapper.createObjectNode();
+
+        // Lấy thông tin người dùng hiện tại
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUserEmail = authentication.getName();
+        User currentUser = userRepository.findByEmail(currentUserEmail);
+
+        if (currentUser == null) {
+            response.put("message", "Không tồn tại người dùng (đang gọi API)");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra quyền "Quản trị hệ thống" hoặc "Quản lý nội dung"
+        boolean isAdmin = currentUser.getRoles().stream().anyMatch(role -> role.getName().equals("Quản trị hệ thống") || role.getName().equals("Quản lý nội dung"));
+
+        if (!isAdmin) {
+            response.put("message", "Bạn không có quyền cập nhật thông tin người dùng này");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra và xử lý FirstName
+        if (firstName == null || firstName.trim().isEmpty()) {
+            response.put("message", "Tên người dùng không được để trống");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra và xử lý LastName
+        if (lastName == null || lastName.trim().isEmpty()) {
+            response.put("message", "Họ người dùng không được để trống");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra và xử lý PhoneNumber
+        if (phoneNumber == null || phoneNumber.trim().isEmpty() || !PhoneNumberValidator.isValidPhoneNumber(phoneNumber)) {
+            response.put("message", "Số điện thoại không hợp lệ");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra và xử lý Roles
+        if (rolesJson == null || rolesJson.trim().isEmpty()) {
+            response.put("message", "Vai trò không được để trống");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra và xử lý vai trò (không được quá 2 vai trò)
+        List<String> roleNames;
+        try {
+            roleNames = mapper.readValue(rolesJson, new TypeReference<List<String>>() {});
+        } catch (JsonProcessingException e) {
+            response.put("message", "Định dạng roles không hợp lệ");
+            response.put("status", "error");
+            return response;
+        }
+
+        if (roleNames.size() > 2) {
+            response.put("message", "Người dùng chỉ có thể có tối đa 2 vai trò");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra trường hợp "Quản trị hệ thống" là vai trò duy nhất và bị thay thế
+        boolean isAdminRoleBeingRemoved = currentUser.getRoles().stream().anyMatch(role -> role.getName().equals("Quản trị hệ thống"));
+        if (isAdminRoleBeingRemoved && roleNames.stream().noneMatch(role -> role.equals("Quản trị hệ thống"))) {
+            // Kiểm tra nếu người dùng duy nhất có "Quản trị hệ thống"
+            long adminCount = userRepository.countByRoleName("Quản trị hệ thống");
+            if (adminCount == 1) {
+                response.put("message", "Hệ thống phải có ít nhất một Quản trị hệ thống");
+                response.put("status", "error");
+                return response;
+            }
+        }
+
+        // Cập nhật FirstName, LastName, PhoneNumber
+        boolean isFirstNameChanged = !firstName.equals(currentUser.getFirstName());
+        boolean isLastNameChanged = !lastName.equals(currentUser.getLastName());
+        boolean isPhoneNumberChanged = !phoneNumber.equals(currentUser.getPhoneNumber());
+
+        if (isFirstNameChanged) {
+            currentUser.setFirstName(firstName);
+        }
+        if (isLastNameChanged) {
+            currentUser.setLastName(lastName);
+        }
+        if (isPhoneNumberChanged) {
+            currentUser.setPhoneNumber(phoneNumber);
+        }
+
+        // Cập nhật Roles (thay thế hoàn toàn vai trò cũ)
+        if (!roleNames.isEmpty()) {
+            if (roleNames.size() > 2) {
+                response.put("message", "Người dùng chỉ có thể có tối đa 2 vai trò");
+                response.put("status", "error");
+                return response;
+            }
+
+            List<Role> roles = new ArrayList<>();
+            for (String roleName : roleNames) {
+                Role role = roleRepository.findByName(roleName);
+                if (role == null) {
+                    response.put("message", "Vai trò không hợp lệ: " + roleName);
+                    response.put("status", "error");
+                    return response;
+                }
+                roles.add(role);
+            }
+
+            // Thay thế hoàn toàn các vai trò cũ bằng các vai trò mới
+            currentUser.setRoles(roles);
+        }
+
+        // Xử lý ảnh đại diện nếu có thay đổi
+        boolean isPhotoChanged = photo != null && !photo.isEmpty();
+        if (isPhotoChanged) {
+            try {
+                // Nếu có ảnh cũ, xóa ảnh cũ trước khi cập nhật
+                if (currentUser.getPhotoPublicId() != null && !currentUser.getPhotoPublicId().isEmpty()) {
+                    cloudinaryService.deleteImage(currentUser.getPhotoPublicId());
+                }
+
+                Map<String, String> uploadResult = cloudinaryService.uploadImage(photo);
+                currentUser.setPhoto(uploadResult.get("imageUrl"));
+                currentUser.setPhotoPublicId(uploadResult.get("publicId"));
+            } catch (Exception e) {
+                response.put("message", "Lỗi khi cập nhật ảnh");
+                response.put("status", "error");
+                return response;
+            }
+        }
+
+        // Lưu thông tin người dùng
+        userRepository.save(currentUser);
+
+        // Phản hồi thành công nếu có thay đổi
+        response.put("message", "Cập nhật thông tin người dùng thành công");
+        response.put("status", "success");
+        return response;
+    }
+
+    @Override
+    public ObjectNode deleteUser(Integer userId) {
+        // Lấy thông tin người dùng hiện tại từ SecurityContext
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = authentication.getName();
+
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode response = mapper.createObjectNode();
+
+        // Tìm user theo ID
+        Optional<User> userOptional = userRepository.findById(userId);
+        if (!userOptional.isPresent()) {
+            response.put("message", "Không tồn tại người dùng với id: " + userId);
+            response.put("status", "error");
+            return response;
+        }
+        User userToDelete = userOptional.get();
+
+        // Kiểm tra nếu người dùng có quyền "Quản trị hệ thống"
+        boolean isAdmin = authentication.getAuthorities().stream().anyMatch(role -> role.getAuthority().equals("Quản trị hệ thống") || role.getAuthority().equals("Quản lý nội dung"));
+
+        // Kiểm tra quyền xóa
+        if (!userToDelete.getEmail().equals(currentUsername) && !isAdmin) {
+            response.put("message", "Bạn không có quyền xóa người dùng này");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra xem có bao nhiêu người dùng có quyền "Quản trị hệ thống"
+        Role role = roleRepository.findByName("Quản trị hệ thống");
+
+        if (role == null) {
+            response.put("message", "Quyền Quản trị hệ thống không tồn tại");
+            response.put("status", "error");
+            return response;
+        }
+
+        long systemAdminCount = userRepository.countByRoleName(role.getName());
+
+        // Nếu chỉ còn một người có quyền "Quản trị hệ thống" và người này bị xóa
+        if (systemAdminCount == 1 && userToDelete.getRoles().contains(role)) {
+            response.put("message", "Không thể xóa tài khoản duy nhất có quyền Quản trị hệ thống");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Kiểm tra xem người dùng có ảnh không và xóa ảnh từ Cloudinary nếu có
+        if (userToDelete.getPhotoPublicId() != null && !userToDelete.getPhotoPublicId().isEmpty()) {
+            try {
+                cloudinaryService.deleteImage(userToDelete.getPhotoPublicId());
+            } catch (Exception e) {
+                e.printStackTrace();
+                response.put("message", "Đã xảy ra lỗi khi xóa ảnh của người dùng");
+                response.put("status", "error");
+                return response;
+            }
+        }
+
+        // Xóa người dùng
+        try {
+            userRepository.delete(userToDelete);
+            response.put("message", "Xóa người dùng thành công");
+            response.put("status", "success");
+
+            // Nếu xóa chính tài khoản của mình, gửi thêm "logout" để frontend biết cần đăng xuất
+            if (userToDelete.getEmail().equals(currentUsername)) {
+                response.put("logout", true);
+            }
+
+            return response;
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("message", "Đã xảy ra lỗi khi xóa người dùng");
+            response.put("status", "error");
+            return response;
+        }
     }
 
     @Override
@@ -385,7 +743,7 @@ public class UserServiceImpl implements UserService {
 
         // Kiểm tra tính hợp lệ của mật khẩu mới
         if (newPassword == null || newPassword.trim().isEmpty() || !PasswordValidator.hasUppercase(newPassword) || !PasswordValidator.hasLowercase(newPassword) || !PasswordValidator.hasDigit(newPassword) || !PasswordValidator.hasSpecialChar(newPassword) || !PasswordValidator.hasMinLength(newPassword, 8)) {
-            response.put("message", "Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ in hoa, chữ in thường, số và ký tự đặc biệt.");
+            response.put("message", "Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ in hoa, chữ in thường, số và ký tự đặc biệt");
             response.put("status", "error");
             return response;
         }

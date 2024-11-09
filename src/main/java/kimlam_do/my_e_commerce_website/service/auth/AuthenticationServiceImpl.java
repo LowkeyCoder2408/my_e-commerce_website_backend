@@ -137,7 +137,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 !PasswordValidator.hasDigit(password) ||
                 !PasswordValidator.hasSpecialChar(password) ||
                 !PasswordValidator.hasMinLength(password, 8)) {
-            response.put("message", "Mật khẩu phải chứa ít nhất 1 ký tự in hoa, 1 ký tự in thường, 1 chữ số, 1 ký tự đặc biệt và có độ dài ít nhất 8 ký tự");
+            response.put("message", " phải chứa ít nhất 1 ký tự in hoa, 1 ký tự in thường, 1 chữ số, 1 ký tự đặc biệt và có độ dài ít nhất 8 ký tự");
             response.put("status", "error");
             return response;
         }
