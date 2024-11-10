@@ -307,11 +307,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public ObjectNode updateUser(String firstName, String lastName, String phoneNumber, String rolesJson, MultipartFile photo) {
+    public ObjectNode updateUser(Integer userId, String firstName, String lastName, String phoneNumber, String rolesJson, MultipartFile photo) {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode response = mapper.createObjectNode();
 
-        // Lấy thông tin người dùng hiện tại
+        // Lấy thông tin người dùng đang gọi API
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUserEmail = authentication.getName();
         User currentUser = userRepository.findByEmail(currentUserEmail);
@@ -327,6 +327,14 @@ public class UserServiceImpl implements UserService {
 
         if (!isAdmin) {
             response.put("message", "Bạn không có quyền cập nhật thông tin người dùng này");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Tìm người dùng cần cập nhật theo userId
+        User user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            response.put("message", "Không tìm thấy người dùng với ID: " + userId);
             response.put("status", "error");
             return response;
         }
@@ -359,10 +367,11 @@ public class UserServiceImpl implements UserService {
             return response;
         }
 
-        // Kiểm tra và xử lý vai trò (không được quá 2 vai trò)
+        // Chuyển đổi vai trò từ JSON
         List<String> roleNames;
         try {
-            roleNames = mapper.readValue(rolesJson, new TypeReference<List<String>>() {});
+            roleNames = mapper.readValue(rolesJson, new TypeReference<List<String>>() {
+            });
         } catch (JsonProcessingException e) {
             response.put("message", "Định dạng roles không hợp lệ");
             response.put("status", "error");
@@ -376,7 +385,7 @@ public class UserServiceImpl implements UserService {
         }
 
         // Kiểm tra trường hợp "Quản trị hệ thống" là vai trò duy nhất và bị thay thế
-        boolean isAdminRoleBeingRemoved = currentUser.getRoles().stream().anyMatch(role -> role.getName().equals("Quản trị hệ thống"));
+        boolean isAdminRoleBeingRemoved = user.getRoles().stream().anyMatch(role -> role.getName().equals("Quản trị hệ thống"));
         if (isAdminRoleBeingRemoved && roleNames.stream().noneMatch(role -> role.equals("Quản trị hệ thống"))) {
             // Kiểm tra nếu người dùng duy nhất có "Quản trị hệ thống"
             long adminCount = userRepository.countByRoleName("Quản trị hệ thống");
@@ -388,55 +397,45 @@ public class UserServiceImpl implements UserService {
         }
 
         // Cập nhật FirstName, LastName, PhoneNumber
-        boolean isFirstNameChanged = !firstName.equals(currentUser.getFirstName());
-        boolean isLastNameChanged = !lastName.equals(currentUser.getLastName());
-        boolean isPhoneNumberChanged = !phoneNumber.equals(currentUser.getPhoneNumber());
+        boolean isFirstNameChanged = !firstName.equals(user.getFirstName());
+        boolean isLastNameChanged = !lastName.equals(user.getLastName());
+        boolean isPhoneNumberChanged = !phoneNumber.equals(user.getPhoneNumber());
 
         if (isFirstNameChanged) {
-            currentUser.setFirstName(firstName);
+            user.setFirstName(firstName);
         }
         if (isLastNameChanged) {
-            currentUser.setLastName(lastName);
+            user.setLastName(lastName);
         }
         if (isPhoneNumberChanged) {
-            currentUser.setPhoneNumber(phoneNumber);
+            user.setPhoneNumber(phoneNumber);
         }
 
         // Cập nhật Roles (thay thế hoàn toàn vai trò cũ)
-        if (!roleNames.isEmpty()) {
-            if (roleNames.size() > 2) {
-                response.put("message", "Người dùng chỉ có thể có tối đa 2 vai trò");
+        List<Role> roles = new ArrayList<>();
+        for (String roleName : roleNames) {
+            Role role = roleRepository.findByName(roleName);
+            if (role == null) {
+                response.put("message", "Vai trò không hợp lệ: " + roleName);
                 response.put("status", "error");
                 return response;
             }
-
-            List<Role> roles = new ArrayList<>();
-            for (String roleName : roleNames) {
-                Role role = roleRepository.findByName(roleName);
-                if (role == null) {
-                    response.put("message", "Vai trò không hợp lệ: " + roleName);
-                    response.put("status", "error");
-                    return response;
-                }
-                roles.add(role);
-            }
-
-            // Thay thế hoàn toàn các vai trò cũ bằng các vai trò mới
-            currentUser.setRoles(roles);
+            roles.add(role);
         }
+        user.setRoles(roles);
 
         // Xử lý ảnh đại diện nếu có thay đổi
         boolean isPhotoChanged = photo != null && !photo.isEmpty();
         if (isPhotoChanged) {
             try {
                 // Nếu có ảnh cũ, xóa ảnh cũ trước khi cập nhật
-                if (currentUser.getPhotoPublicId() != null && !currentUser.getPhotoPublicId().isEmpty()) {
-                    cloudinaryService.deleteImage(currentUser.getPhotoPublicId());
+                if (user.getPhotoPublicId() != null && !user.getPhotoPublicId().isEmpty()) {
+                    cloudinaryService.deleteImage(user.getPhotoPublicId());
                 }
 
                 Map<String, String> uploadResult = cloudinaryService.uploadImage(photo);
-                currentUser.setPhoto(uploadResult.get("imageUrl"));
-                currentUser.setPhotoPublicId(uploadResult.get("publicId"));
+                user.setPhoto(uploadResult.get("imageUrl"));
+                user.setPhotoPublicId(uploadResult.get("publicId"));
             } catch (Exception e) {
                 response.put("message", "Lỗi khi cập nhật ảnh");
                 response.put("status", "error");
@@ -445,7 +444,7 @@ public class UserServiceImpl implements UserService {
         }
 
         // Lưu thông tin người dùng
-        userRepository.save(currentUser);
+        userRepository.save(user);
 
         // Phản hồi thành công nếu có thay đổi
         response.put("message", "Cập nhật thông tin người dùng thành công");

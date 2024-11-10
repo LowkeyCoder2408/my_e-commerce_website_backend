@@ -37,7 +37,7 @@ public interface UserService {
 
     ObjectNode addUser(String firstName, String lastName, String password, String email, String phoneNumber, String rolesJson, MultipartFile photo);
 
-    ObjectNode updateUser(String firstName, String lastName, String phoneNumber, String rolesJson, MultipartFile photo);
+    ObjectNode updateUser(Integer userId, String firstName, String lastName, String phoneNumber, String rolesJson, MultipartFile photo);
 
     ObjectNode deleteUser(Integer userId);
 }

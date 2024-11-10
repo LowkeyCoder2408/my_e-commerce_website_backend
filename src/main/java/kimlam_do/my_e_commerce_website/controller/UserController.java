@@ -191,9 +191,9 @@ public class UserController {
     }
 
     @PutMapping("/update-user")
-    public ResponseEntity<ObjectNode> updateUser(@RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName, @RequestParam("phoneNumber") String phoneNumber, @RequestParam("rolesJson") String rolesJson, @RequestParam(value = "photo", required = false) MultipartFile photo) {
+    public ResponseEntity<ObjectNode> updateUser(@RequestParam("userId") Integer userId, @RequestParam("firstName") String firstName, @RequestParam("lastName") String lastName, @RequestParam("phoneNumber") String phoneNumber, @RequestParam("rolesJson") String rolesJson, @RequestParam(value = "photo", required = false) MultipartFile photo) {
         try {
-            ObjectNode response = userService.updateUser(firstName, lastName, phoneNumber, rolesJson, photo);
+            ObjectNode response = userService.updateUser(userId, firstName, lastName, phoneNumber, rolesJson, photo);
             String status = response.get("status").asText();
             HttpStatus httpStatus = "error".equals(status) ? HttpStatus.BAD_REQUEST : HttpStatus.OK;
             return new ResponseEntity<>(response, httpStatus);
