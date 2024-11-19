@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 public class ProductDTO {
     private Integer id;
     private String name;
-    private String alias;
     private String shortDescription;
     private String fullDescription;
     private LocalDateTime createdTime;
@@ -46,7 +45,6 @@ public class ProductDTO {
         return product == null ? null : ProductDTO.builder()
                 .id(product.getId())
                 .name(product.getName())
-                .alias(product.getAlias())
                 .shortDescription(product.getShortDescription())
                 .fullDescription(product.getFullDescription())
                 .createdTime(product.getCreatedTime())

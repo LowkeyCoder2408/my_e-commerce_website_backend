@@ -1,8 +1,11 @@
 package kimlam_do.my_e_commerce_website.service.product;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import kimlam_do.my_e_commerce_website.model.entity.Product;
 import org.springframework.data.domain.Page;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Optional;
 
@@ -23,4 +26,6 @@ public interface ProductService {
     Page<Product> findByCategory_AliasAndCurrentPriceBetween(int page, int size, String sortBy, String sortDir, String categoryAlias, BigDecimal minPrice, BigDecimal maxPrice);
 
     Page<Product> findByNameContainingAndCategory_AliasAndCurrentPriceBetween(int page, int size, String sortBy, String sortDir, String productName, String categoryAlias, BigDecimal minPrice, BigDecimal maxPrice);
+
+    ObjectNode addAProduct(String productName, String categoryName, String brandName, int listedPrice, int currentPrice, int quantity, String operatingSystem, Optional<Float> weight, Optional<Float> length, Optional<Float> width, Optional<Float> height, String shortDescription, String fullDescription, MultipartFile mainImageFile, MultipartFile[] relatedImagesFiles) throws IOException;
 }

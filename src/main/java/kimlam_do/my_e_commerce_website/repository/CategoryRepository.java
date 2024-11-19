@@ -10,4 +10,6 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 public interface CategoryRepository extends JpaRepository<Category, Integer> {
     @Query("SELECT c FROM Category c WHERE c.alias = :categoryAlias")
     Category findByAlias(@Param("categoryAlias") String categoryAlias);
+
+    Category findByName(String categoryName);
 }

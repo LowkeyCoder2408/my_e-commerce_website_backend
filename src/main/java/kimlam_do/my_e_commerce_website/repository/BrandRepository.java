@@ -6,4 +6,5 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 @RepositoryRestResource(exported = false)
 public interface BrandRepository extends JpaRepository<Brand, Integer> {
+    Brand findByName(String brandName);
 }

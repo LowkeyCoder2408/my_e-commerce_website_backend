@@ -1,5 +1,7 @@
 package kimlam_do.my_e_commerce_website.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import kimlam_do.my_e_commerce_website.model.dto.PaginatedResponse;
 import kimlam_do.my_e_commerce_website.model.dto.ProductDTO;
 import kimlam_do.my_e_commerce_website.model.entity.Product;
@@ -9,7 +11,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -124,6 +128,23 @@ public class ProductController {
         } catch (Exception e) {
             e.printStackTrace();
             return new ResponseEntity<>("Đã xảy ra lỗi khi lấy dữ liệu sản phẩm theo tên, tên danh mục và khoảng giá.", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/add-product")
+    public ResponseEntity<?> addAProduct(@RequestParam("productName") String productName, @RequestParam("categoryName") String categoryName, @RequestParam("brandName") String brandName, @RequestParam("listedPrice") int listedPrice, @RequestParam("currentPrice") int currentPrice, @RequestParam("quantity") int quantity, @RequestParam(value = "operatingSystem", required = false) String operatingSystem, @RequestParam(value = "weight", required = false) Optional<Float> weight, @RequestParam(value = "length", required = false) Optional<Float> length, @RequestParam(value = "width", required = false) Optional<Float> width, @RequestParam(value = "height", required = false) Optional<Float> height, @RequestParam(value = "shortDescription", required = false) String shortDescription, @RequestParam(value = "fullDescription", required = false) String fullDescription, @RequestParam(value = "mainImage", required = false) MultipartFile mainImageFile, @RequestParam(value = "relatedImages", required = false) MultipartFile[] relatedImagesFiles) throws IOException {
+        try {
+            ObjectNode response = productService.addAProduct(productName, categoryName, brandName, listedPrice, currentPrice, quantity, operatingSystem, weight, length, width, height, shortDescription, fullDescription, mainImageFile, relatedImagesFiles);
+            String status = response.get("status").asText();
+            HttpStatus httpStatus = "error".equals(status) ? HttpStatus.BAD_REQUEST : HttpStatus.CREATED;
+            return new ResponseEntity<>(response, httpStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("message", "Đã xảy ra lỗi khi thêm sản phẩm mới");
+            errorResponse.put("status", "error");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
