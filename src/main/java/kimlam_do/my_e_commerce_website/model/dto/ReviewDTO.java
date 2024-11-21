@@ -21,19 +21,9 @@ public class ReviewDTO {
     private Integer userId;
     private String userPhoto;
     private String userFullName;
+    private String productName;
 
     public static ReviewDTO toDTO(Review review) {
-        return review == null ? null : ReviewDTO.builder()
-                .id(review.getId())
-                .content(review.getContent())
-                .rating(review.getRating())
-                .reviewTime(review.getReviewTime())
-                .productId(review.getProduct().getId())
-                .userId(review.getUser() != null ? review.getUser().getId() : null)
-                .userPhoto(review.getUser().getPhoto())
-                .userFullName(review.getUser() != null
-                        ? review.getUser().getFirstName() + " " + review.getUser().getLastName()
-                        : null)
-                .build();
+        return review == null ? null : ReviewDTO.builder().id(review.getId()).content(review.getContent()).rating(review.getRating()).reviewTime(review.getReviewTime()).productId(review.getProduct().getId()).userId(review.getUser() != null ? review.getUser().getId() : null).userPhoto(review.getUser().getPhoto()).userFullName(review.getUser() != null ? review.getUser().getFirstName() + " " + review.getUser().getLastName() : null).productName(review.getProduct().getName()).build();
     }
 }

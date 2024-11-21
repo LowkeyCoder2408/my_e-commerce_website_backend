@@ -35,6 +35,7 @@ public class Endpoints {
             "/addresses/default-address/find-by-user-id/**",
             "/orders/find-by-id/{id}",
             "/orders/find-by-user/**",
+            "/order-status/descriptions",
     };
 
     public static final String[] PUBLIC_POST_ENDPOINTS = {

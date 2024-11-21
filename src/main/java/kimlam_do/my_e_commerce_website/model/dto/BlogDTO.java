@@ -20,6 +20,7 @@ public class BlogDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private int likesCount;
+    private boolean enabled;
     private List<BlogCommentDTO> comments;
 
     public static BlogDTO toDTO(Blog blog) {
@@ -34,6 +35,7 @@ public class BlogDTO {
                 .updatedAt(blog.getUpdatedAt())
 //                .likesCount(blog.getLikesCount())
                 .likesCount(blog.getLikedBlogs().toArray().length)
+                .enabled(blog.isEnabled())
                 .comments(blog.getComments().stream().map(BlogCommentDTO::toDTO).collect(Collectors.toList()))
                 .build();
     }

@@ -79,4 +79,8 @@ public enum OrderStatus {
     };
 
     public abstract String defaultDescription();
+
+    public String getDefaultDescription() {
+        return defaultDescription();
+    }
 }

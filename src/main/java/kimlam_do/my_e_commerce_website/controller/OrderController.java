@@ -139,4 +139,26 @@ public class OrderController {
     public Map<String, Double> getOrderStatusPercentage() {
         return orderService.calculateOrderPercentageByStatus();
     }
+
+    @PutMapping("/update-order")
+    public ResponseEntity<ObjectNode> updateAnOrder(@RequestBody JsonNode requestBody) {
+        try {
+            Integer orderId = requestBody.get("orderId").asInt();
+            String status = requestBody.get("status").asText();
+
+            // Gọi service để cập nhật trạng thái đơn hàng
+            ObjectNode response = orderService.updateOrderStatus(orderId, status);
+
+            String responseStatus = response.get("status").asText();
+            HttpStatus httpStatus = "error".equals(responseStatus) ? HttpStatus.BAD_REQUEST : HttpStatus.OK;
+            return new ResponseEntity<>(response, httpStatus);
+        } catch (Exception e) {
+            e.printStackTrace();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("message", "Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng");
+            errorResponse.put("status", "error");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

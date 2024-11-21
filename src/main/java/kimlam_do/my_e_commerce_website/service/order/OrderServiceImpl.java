@@ -32,6 +32,7 @@ public class OrderServiceImpl implements OrderService {
     private final DistrictRepository districtRepository;
     private final WardRepository wardRepository;
     private final AddressRepository addressRepository;
+    private final OrderTrackRepository orderTrackRepository;
 
     @Override
     public List<OrderDTO> getAllOrders() {
@@ -634,5 +635,59 @@ public class OrderServiceImpl implements OrderService {
         }
 
         return percentages;
+    }
+
+    @Override
+    public ObjectNode updateOrderStatus(Integer orderId, String defaultDescription) {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode response = mapper.createObjectNode();
+
+        try {
+            // Lấy thông tin đơn hàng từ database
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại"));
+
+            // Lấy enum tương ứng với description
+            OrderStatus newStatus = getOrderStatusByDescription(defaultDescription); // Tìm enum từ mô tả
+            if (newStatus == null) {
+                response.put("message", "Trạng thái không hợp lệ");
+                response.put("status", "error");
+                return response;
+            }
+
+            OrderStatus currentStatus = order.getStatus();
+
+            if (currentStatus != newStatus) {
+                order.setStatus(newStatus); // Cập nhật trạng thái đơn hàng
+                orderRepository.save(order);
+
+                // Thêm bản ghi vào bảng OrderTrack
+                OrderTrack orderTrack = new OrderTrack();
+                orderTrack.setOrder(order);
+                orderTrack.setStatus(newStatus);
+                orderTrack.setNote("Cập nhật trạng thái từ " + currentStatus + " sang " + newStatus);
+                orderTrack.setUpdatedTime(LocalDateTime.now());
+                orderTrackRepository.save(orderTrack);
+            }
+
+            response.put("message", "Cập nhật trạng thái đơn hàng thành công");
+            response.put("status", "success");
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("message", "Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng");
+            response.put("status", "error");
+        }
+
+        return response;
+    }
+
+    // Phương thức ánh xạ mô tả thành enum OrderStatus
+    private OrderStatus getOrderStatusByDescription(String description) {
+        for (OrderStatus status : OrderStatus.values()) {
+            if (status.getDefaultDescription().equalsIgnoreCase(description)) {
+                return status;
+            }
+        }
+        return null; // Nếu không tìm thấy trạng thái tương ứng
     }
 }

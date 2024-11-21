@@ -26,4 +26,6 @@ public interface OrderService {
     Integer calculateTotalAmountByMonth(int month, int year);
 
     Map<String, Double> calculateOrderPercentageByStatus();
+
+    ObjectNode updateOrderStatus(Integer orderId, String status);
 }
