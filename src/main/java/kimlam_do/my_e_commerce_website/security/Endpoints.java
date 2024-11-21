@@ -45,7 +45,6 @@ public class Endpoints {
             "/blogs/add-blog",
 
             // Authorization is handled directly in functions
-            "/products/add-product",
             "/users/reset-password",
             "/cart-items/add-item",
             "/favorite-products/add-favorite-product",
@@ -97,5 +96,8 @@ public class Endpoints {
             "/favorite-products/**",
             "/orders/**",
             "/order-details/**",
+            "/products/add-product",
+            "/products/update-product",
+            "/products/delete-product",
     };
 }

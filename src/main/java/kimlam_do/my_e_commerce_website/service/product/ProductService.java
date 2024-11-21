@@ -28,4 +28,8 @@ public interface ProductService {
     Page<Product> findByNameContainingAndCategory_AliasAndCurrentPriceBetween(int page, int size, String sortBy, String sortDir, String productName, String categoryAlias, BigDecimal minPrice, BigDecimal maxPrice);
 
     ObjectNode addAProduct(String productName, String categoryName, String brandName, int listedPrice, int currentPrice, int quantity, String operatingSystem, Optional<Float> weight, Optional<Float> length, Optional<Float> width, Optional<Float> height, String shortDescription, String fullDescription, MultipartFile mainImageFile, MultipartFile[] relatedImagesFiles) throws IOException;
+
+    ObjectNode updateAProduct(Integer productId, String productName, String categoryName, String brandName, Optional<Integer> listedPrice, Optional<Integer> currentPrice, Optional<Integer> quantity, String operatingSystem, Optional<Float> weight, Optional<Float> length, Optional<Float> width, Optional<Float> height, String shortDescription, String fullDescription, MultipartFile mainImageFile, MultipartFile[] relatedImagesFiles) throws IOException;
+
+    ObjectNode deleteAProduct(Integer productId) throws IOException;
 }

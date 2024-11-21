@@ -2,12 +2,10 @@ package kimlam_do.my_e_commerce_website.service.product;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import kimlam_do.my_e_commerce_website.model.entity.Brand;
-import kimlam_do.my_e_commerce_website.model.entity.Category;
-import kimlam_do.my_e_commerce_website.model.entity.Product;
-import kimlam_do.my_e_commerce_website.model.entity.ProductImage;
+import kimlam_do.my_e_commerce_website.model.entity.*;
 import kimlam_do.my_e_commerce_website.repository.BrandRepository;
 import kimlam_do.my_e_commerce_website.repository.CategoryRepository;
+import kimlam_do.my_e_commerce_website.repository.ProductImageRepository;
 import kimlam_do.my_e_commerce_website.repository.ProductRepository;
 import kimlam_do.my_e_commerce_website.service.cloudinary.CloudinaryService;
 import lombok.RequiredArgsConstructor;
@@ -21,10 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +28,7 @@ public class ProductServiceImpl implements ProductService {
     private final CategoryRepository categoryRepository;
     private final BrandRepository brandRepository;
     private final CloudinaryService cloudinaryService;
+    private final ProductImageRepository productImageRepository;
 
     @Override
     public Optional<Product> getProductById(int id) {
@@ -230,6 +226,195 @@ public class ProductServiceImpl implements ProductService {
 
         // Trả về thông báo thành công
         response.put("message", "Sản phẩm đã được thêm thành công");
+        response.put("status", "success");
+
+        return response;
+    }
+
+    @Override
+    public ObjectNode updateAProduct(Integer productId, String productName, String categoryName, String brandName, Optional<Integer> listedPrice, Optional<Integer> currentPrice, Optional<Integer> quantity, String operatingSystem, Optional<Float> weight, Optional<Float> length, Optional<Float> width, Optional<Float> height, String shortDescription, String fullDescription, MultipartFile mainImageFile, MultipartFile[] relatedImagesFiles) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode response = mapper.createObjectNode();
+
+        // Kiểm tra ID sản phẩm
+        if (productId == null) {
+            response.put("message", "ID sản phẩm không được để trống");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Tìm sản phẩm theo ID
+        Optional<Product> optionalProduct = productRepository.findById(productId);
+        if (optionalProduct.isEmpty()) {
+            response.put("message", "Không tìm thấy sản phẩm với ID đã cung cấp");
+            response.put("status", "error");
+            return response;
+        }
+
+        Product product = optionalProduct.get();
+
+        // Cập nhật các thông tin cơ bản của sản phẩm
+        if (productName != null && !productName.isEmpty()) {
+            product.setName(productName);
+        }
+        listedPrice.ifPresent(price -> {
+            if (price > 0) product.setListedPrice(price);
+        });
+        currentPrice.ifPresent(price -> {
+            if (price > 0) product.setCurrentPrice(price);
+        });
+        if (product.getListedPrice() > 0 && product.getCurrentPrice() > 0) {
+            product.setDiscountPercent((product.getListedPrice() - product.getCurrentPrice()) * 100 / product.getListedPrice());
+        }
+        quantity.ifPresent(q -> {
+            if (q >= 0) product.setQuantity(q);
+        });
+        weight.ifPresent(product::setWeight);
+        length.ifPresent(product::setLength);
+        width.ifPresent(product::setWidth);
+        height.ifPresent(product::setHeight);
+        if (shortDescription != null) product.setShortDescription(shortDescription);
+        if (fullDescription != null) product.setFullDescription(fullDescription);
+        if (operatingSystem != null) product.setOperatingSystem(operatingSystem);
+
+        // Cập nhật danh mục và thương hiệu
+        if (categoryName != null) {
+            Category category = categoryRepository.findByName(categoryName);
+            if (category == null) {
+                response.put("message", "Danh mục không hợp lệ");
+                response.put("status", "error");
+                return response;
+            }
+            product.setCategory(category);
+        }
+        if (brandName != null) {
+            Brand brand = brandRepository.findByName(brandName);
+            if (brand == null) {
+                response.put("message", "Thương hiệu không hợp lệ");
+                response.put("status", "error");
+                return response;
+            }
+            product.setBrand(brand);
+        }
+
+        // Xử lý ảnh chính
+        if (mainImageFile != null && !mainImageFile.isEmpty()) {
+            if (!isImageFile(mainImageFile)) {
+                response.put("message", "Ảnh chính phải là một file ảnh hợp lệ");
+                response.put("status", "error");
+                return response;
+            }
+
+            // Xóa ảnh chính cũ khỏi Cloudinary
+            cloudinaryService.deleteImage(product.getMainImagePublicId());
+
+            // Tải ảnh chính mới lên Cloudinary
+            Map<String, String> uploadMainImageResult = cloudinaryService.uploadImage(mainImageFile);
+            if (uploadMainImageResult == null || !uploadMainImageResult.containsKey("imageUrl")) {
+                response.put("message", "Có lỗi khi tải ảnh chính lên Cloudinary");
+                response.put("status", "error");
+                return response;
+            }
+
+            product.setMainImage(uploadMainImageResult.get("imageUrl"));
+            product.setMainImagePublicId(uploadMainImageResult.get("publicId"));
+        }
+
+        // Xử lý ảnh liên quan
+        if (relatedImagesFiles != null && relatedImagesFiles.length > 0) {
+            // Xóa toàn bộ ảnh cũ khỏi Cloudinary
+            for (ProductImage oldImage : product.getImages()) {
+                cloudinaryService.deleteImage(oldImage.getPublicId());
+            }
+
+            // Tải và thêm ảnh mới
+            List<ProductImage> newImages = new ArrayList<>();
+            for (MultipartFile relatedImageFile : relatedImagesFiles) {
+                if (relatedImageFile != null && !relatedImageFile.isEmpty()) {
+                    if (!isImageFile(relatedImageFile)) {
+                        response.put("message", "Có file không phải ảnh trong ảnh liên quan");
+                        response.put("status", "error");
+                        return response;
+                    }
+
+                    Map<String, String> uploadRelatedImageResult = cloudinaryService.uploadImage(relatedImageFile);
+                    if (uploadRelatedImageResult == null || !uploadRelatedImageResult.containsKey("imageUrl")) {
+                        response.put("message", "Có lỗi khi tải ảnh liên quan lên Cloudinary");
+                        response.put("status", "error");
+                        return response;
+                    }
+
+                    ProductImage productImage = new ProductImage();
+                    productImage.setUrl(uploadRelatedImageResult.get("imageUrl"));
+                    productImage.setPublicId(uploadRelatedImageResult.get("publicId"));
+                    productImage.setName("Ảnh cho sản phẩm " + product.getName());
+                    newImages.add(productImage);
+                }
+            }
+
+            // Sử dụng hàm setImages để cập nhật danh sách ảnh
+            product.setImages(newImages);
+        }
+
+        // Cập nhật thời gian
+        product.setUpdatedTime(LocalDateTime.now());
+
+        // Lưu sản phẩm
+        productRepository.save(product);
+
+        // Trả về thông báo thành công
+        response.put("message", "Sản phẩm đã được cập nhật thành công");
+        response.put("status", "success");
+        return response;
+    }
+
+    @Override
+    public ObjectNode deleteAProduct(Integer productId) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode response = mapper.createObjectNode();
+
+        // Tìm sản phẩm theo ID
+        Product product = productRepository.findById(productId).orElse(null);
+        if (product == null) {
+            response.put("message", "Sản phẩm không tồn tại");
+            response.put("status", "error");
+            return response;
+        }
+
+        // Xóa ảnh chính khỏi Cloudinary
+        String mainImagePublicId = product.getMainImagePublicId();
+        if (mainImagePublicId != null && !mainImagePublicId.isEmpty()) {
+            try {
+                cloudinaryService.deleteImage(mainImagePublicId); // Gọi dịch vụ xóa ảnh chính
+            } catch (IOException e) {
+                response.put("message", "Không thể xóa ảnh chính trên Cloudinary");
+                response.put("status", "error");
+                return response;
+            }
+        }
+
+        // Xóa ảnh liên quan khỏi Cloudinary
+        List<ProductImage> productImages = product.getImages();
+        if (productImages != null && !productImages.isEmpty()) {
+            for (ProductImage productImage : productImages) {
+                String relatedImagePublicId = productImage.getPublicId();
+                if (relatedImagePublicId != null && !relatedImagePublicId.isEmpty()) {
+                    try {
+                        cloudinaryService.deleteImage(relatedImagePublicId); // Gọi dịch vụ xóa ảnh liên quan
+                    } catch (IOException e) {
+                        response.put("message", "Không thể xóa ảnh liên quan trên Cloudinary");
+                        response.put("status", "error");
+                        return response;
+                    }
+                }
+            }
+        }
+
+        // Xóa sản phẩm khỏi cơ sở dữ liệu
+        productRepository.delete(product);
+
+        // Trả về thông báo thành công
+        response.put("message", "Sản phẩm đã được xóa thành công");
         response.put("status", "success");
 
         return response;

@@ -147,4 +147,42 @@ public class ProductController {
             return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @PutMapping("/update-product")
+    public ResponseEntity<?> updateAProduct(@RequestParam("productId") Integer productId, @RequestParam(value = "productName", required = false) String productName, @RequestParam(value = "categoryName", required = false) String categoryName, @RequestParam(value = "brandName", required = false) String brandName, @RequestParam(value = "listedPrice", required = false) Optional<Integer> listedPrice, @RequestParam(value = "currentPrice", required = false) Optional<Integer> currentPrice, @RequestParam(value = "quantity", required = false) Optional<Integer> quantity, @RequestParam(value = "operatingSystem", required = false) String operatingSystem, @RequestParam(value = "weight", required = false) Optional<Float> weight, @RequestParam(value = "length", required = false) Optional<Float> length, @RequestParam(value = "width", required = false) Optional<Float> width, @RequestParam(value = "height", required = false) Optional<Float> height, @RequestParam(value = "shortDescription", required = false) String shortDescription, @RequestParam(value = "fullDescription", required = false) String fullDescription, @RequestParam(value = "mainImage", required = false) MultipartFile mainImageFile, @RequestParam(value = "relatedImages", required = false) MultipartFile[] relatedImagesFiles) throws IOException {
+        try {
+            // Gọi service để cập nhật sản phẩm
+            ObjectNode response = productService.updateAProduct(productId, productName, categoryName, brandName, listedPrice, currentPrice, quantity, operatingSystem, weight, length, width, height, shortDescription, fullDescription, mainImageFile, relatedImagesFiles);
+            String status = response.get("status").asText();
+            HttpStatus httpStatus = "error".equals(status) ? HttpStatus.BAD_REQUEST : HttpStatus.OK;
+            return new ResponseEntity<>(response, httpStatus);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("message", "Đã xảy ra lỗi khi cập nhật sản phẩm");
+            errorResponse.put("status", "error");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @DeleteMapping("/delete-product/{productId}")
+    public ResponseEntity<?> deleteAProduct(@PathVariable("productId") Integer productId) {
+        try {
+            // Gọi service để xóa sản phẩm
+            ObjectNode response = productService.deleteAProduct(productId);
+            String status = response.get("status").asText();
+            HttpStatus httpStatus = "error".equals(status) ? HttpStatus.BAD_REQUEST : HttpStatus.OK;
+            return new ResponseEntity<>(response, httpStatus);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode errorResponse = mapper.createObjectNode();
+            errorResponse.put("message", "Đã xảy ra lỗi khi xóa sản phẩm");
+            errorResponse.put("status", "error");
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

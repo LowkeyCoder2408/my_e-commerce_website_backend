@@ -137,4 +137,20 @@ public class Product {
         }
         this.ratingCount = count;
     }
+
+    public void setImages(List<ProductImage> newImages) {
+        // Xóa toàn bộ ảnh cũ
+        this.images.clear();
+
+        // Thêm từng ảnh mới vào danh sách, đồng thời thiết lập quan hệ hai chiều
+        for (ProductImage image : newImages) {
+            addImage(image);
+        }
+    }
+
+    public void addImage(ProductImage image) {
+        // Thiết lập quan hệ hai chiều giữa Product và ProductImage
+        image.setProduct(this);
+        this.images.add(image);
+    }
 }
